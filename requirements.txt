@@ -1,0 +1,8 @@
+django
+djangorestframework
+ramda
+twilio
+openai
+channels
+daphne
+channels_redis

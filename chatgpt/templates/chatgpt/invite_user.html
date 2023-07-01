@@ -1,0 +1,127 @@
+{% extends 'chatgpt/index.html' %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Chat Room</title>
+  <style>
+    .welcome-text {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: gray;
+      text-align: center;
+    }
+
+    .login-message {
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .card {
+      background-color: #f8f8f8;
+      border-radius: 10px;
+      box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+      background-color: #f2f2f2;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 10px;
+      border-radius: 10px 10px 0 0;
+      text-align: center;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .form-group label {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .form-control {
+      border-radius: 5px;
+    }
+
+    .btn-primary {
+      background-color:black;
+      border-color: #4CAF50;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .btn-primary:hover {
+      background-color: #45a049;
+      border-color: #45a049;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Invite to chat</div>
+          <div class="card-body">
+            <p class="welcome-text">Invite someone to chat with you anonymously. They won't know who sent the
+              invitation!</p>
+              <form action="{% url 'invite_user' %}" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                  <label for="phoneNumber">WhatsApp Number</label>
+                  <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control"
+                  placeholder="Enter phone number" pattern="[0-9]*" inputmode="numeric" minlength="10" maxlength="10" 
+                  required>
+                </div>
+                <div class="form-group">
+                  <label for="welcomemessage">Welcome Message</label>
+                  <input type="text" id="welcomemessage" name="welcomemessage" class="form-control"
+                    placeholder="Hey John, I would like to chat with you..." required>
+                </div>
+                {% if user.is_authenticated %}
+                <button type="submit" class="btn btn-primary">Send Invite</button>
+                {% else %}
+                <button type="submit" class="btn btn-primary" disabled>Send Invite</button>
+                <p class="login-message">Please login to invite a person.</p>
+                {% endif %}
+              </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Invited user will receive the message like this</div>
+          <div class="card-body">
+            <p>Hey Buddy,</p>
+            <p>You have been invited to chat on Makechat! Someone has sent you an anonymous invitation to chat with
+              them. Here's the  message they sent:</p>
+            <p style="color: grey;">Hey John, I would like to chat with you...</p>
+            <p>Join the conversation by clicking on the link below:</p>
+            <p><a href="#">Click here to join the chat</a></p>
+            <p>Feel free to accept the invitation and start chatting. Remember, the person who invited you will remain
+              anonymous.</p>
+            <p>Happy chatting!<br>The Makechat Team</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
+{% endblock content %}
