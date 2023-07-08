@@ -259,7 +259,7 @@ def register_view(request):
                 # add an error message and return to the registration form
                 messages.error(
                     request,
-                    "Please enter a valid email address or 10-digit phone number.",
+                    "Please enter a valid 10-digit phone number.",
                 )
                 return redirect("register")
 
@@ -391,3 +391,15 @@ def chat(request):
         },
     )
     # return HttpResponse("chat started between, " + request.user.username + " and " + second_person.username)
+
+# http://127.0.0.1:8000/onboard?phone_number=9442890327
+
+
+#django
+#djangorestframework
+#ramda
+#twilio
+#openai
+#channels
+#daphne
+#channels_redis
