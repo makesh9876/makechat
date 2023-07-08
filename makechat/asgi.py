@@ -1,4 +1,4 @@
-import os
+'''import os
 
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
@@ -19,4 +19,4 @@ application = ProtocolTypeRouter(
             AuthMiddlewareStack(URLRouter(chatgpt.routing.websocket_urlpatterns))
         ),
     }
-)
+)'''

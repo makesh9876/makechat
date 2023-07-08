@@ -4,7 +4,7 @@
 from django.urls import path
 from .views import (
     IncommingMessage, MakeChat, register_view, logout,
-    login_request, home,Onboard, lobby,chat
+    login_request, home,Onboard,chat
 )
 
 urlpatterns = [
@@ -16,6 +16,5 @@ urlpatterns = [
     path('logout/', logout, name="logout"),
     path('login/', login_request, name="login"),
     path('onboard/', Onboard.as_view(), name="onboard"),
-    path('lobby/',lobby, name='lobby'),
     path("chatting/",chat, name="chatting")
 ]

@@ -5,10 +5,10 @@ from abc import ABC, abstractmethod
 from twilio.rest import Client
 import openai
 
-ACCOUNT_ID_TWILLIO = "######"
-AUTH_TOPKEN_TWILLIO = "#####" # provide the correct key
-OPENAPI_ORG = ""
-OPEN_API_KEY = ""
+ACCOUNT_ID_TWILLIO = "AC7bb006e27c87a985c52e832c34c781b5"
+AUTH_TOPKEN_TWILLIO = "e67f9b297a51192ec03263001283ab17" # provide the correct key
+OPENAPI_ORG = "org-QmSKgWgHBLzhgxBcP6RUgtcc"
+OPEN_API_KEY = "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"
 
 
 class ClientBuilder(ABC):

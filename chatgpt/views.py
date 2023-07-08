@@ -44,7 +44,7 @@ class DataRetriver:
             user = User.objects.get(username=user_name)
             customer = Customer.objects.get(user=user)
             return user, customer
-        except User.DoesNotExist:
+        except (User.DoesNotExist, Customer.DoesNotExist):
             print("=====user does not exists ", user_name)
             if create_new_if_not_exists:
                 return self.create_new_user(user_name=user_name)
@@ -104,6 +104,17 @@ class ChatGpt:
         messages.reverse()
         return messages
 
+def makechat_body(response_message : str, user_number: str):
+    """ 
+        This function will return the makechat app body
+    """
+    return ("Hey Buddy,\n\nYou have been invited to chat on Makechat! Someone has sent you an anonymous invitation to chat with them. \nHere's the message they sent:\n\n"
+            + "============================\n\n"
+            + response_message + "\n\n"
+             + "============================\n\n"
+            + "\n\nJoin the conversation by clicking on the link below:\n"
+            + "http://makechattest.com/onboard?phone_number="+user_number
+            + "\n\nFeel free to accept the invitation and start chatting. \nRemember, the person who invited you will remain anonymous.\n\nHappy chatting!\nThe Makechat Team")
 
 class OutgoingMessage:
     """
@@ -116,17 +127,14 @@ class OutgoingMessage:
         """
         client = TwillioClient().get_client()
         print("======user number", user_number)
-        return client.messages.create(
-            from_="whatsapp:+14155238886",
-            body="Hey Buddy,\n\nYou have been invited to chat on Makechat! Someone has sent you an anonymous invitation to chat with them. \nHere's the message they sent:\n\n"
-            + "============================\n\n"
-            + response_message + "\n\n"
-             + "============================\n\n"
-            + "\n\nJoin the conversation by clicking on the link below:\n"
-            + "http://makechattest.com/onboard?phone_number="+user_number
-            + "\n\nFeel free to accept the invitation and start chatting. \nRemember, the person who invited you will remain anonymous.\n\nHappy chatting!\nThe Makechat Team",
-            to="whatsapp:+91" + user_number,
-        )
+        resposnse_message_list = [response_message[i:i+1600] for i in range(0, len(response_message), 1600)]
+        for msges in resposnse_message_list:
+            res = client.messages.create(
+                from_="whatsapp:+14155238886",
+                body=msges,
+                to="whatsapp:+91" + user_number,
+            )
+        return res
 
 
 class IncommingMessage(APIView):
@@ -148,7 +156,7 @@ class IncommingMessage(APIView):
             return Response({"status": status.HTTP_200_OK})
         data_retriver = DataRetriver()
         user_obj, customer_obj = data_retriver.get_user_by_user_name(
-            user_name=user_name
+            user_name=user_name, create_new_if_not_exists=True
         )
         data_retriver.create_message(user=user_obj, content=content, role="user")
         old_messages = data_retriver.get_messages_by_user(user=user_obj)
