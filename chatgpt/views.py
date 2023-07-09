@@ -213,7 +213,6 @@ class ChatGpt:
         chat with chatgpt
         """
         try:
-            return "hellow static"
             open_api_client = OpenApiClient().get_client()
             response = open_api_client.ChatCompletion.create(
                 model="gpt-3.5-turbo", messages=messages
