@@ -213,6 +213,7 @@ class ChatGpt:
         chat with chatgpt
         """
         try:
+            return "hellow static"
             open_api_client = OpenApiClient().get_client()
             response = open_api_client.ChatCompletion.create(
                 model="gpt-3.5-turbo", messages=messages
@@ -282,7 +283,11 @@ class IncommingMessage(APIView):
             send limit exceeded msg on free plan
         """
         OutgoingMessage().send(
-                user_number=str(user_obj.username), response_message="Sorry your limit exceeded on free plan"
+                user_number=str(user_obj.username),
+                response_message="Oops! It seems you've reached the limit on our free plan. "
+                    +"Unlock unlimited chatting by subscribing for just 5 Rs and continue the "
+                    +"conversation without interruptions. Subscribe now!\nCost of plan : 5rs\n"
+                    + "https://makechat.pythonanywhere.com/plan-details"
             )
         return True
 
@@ -291,7 +296,9 @@ class IncommingMessage(APIView):
             This function will send the message to subscribe
         """
         OutgoingMessage().send(
-                user_number=str(user_obj.username), response_message="Sorry your plan expired, please activate"
+                user_number=str(user_obj.username),
+                response_message="Oops! It seems your plan expired, Subscribe now!\nCost of plan : 5rs\n"
+                            +"https://makechat.pythonanywhere.com/plan-details"
             )
         return True
     def is_expired_plan(self, user_obj, customer_obj, len_of_messages : int):
@@ -301,7 +308,7 @@ class IncommingMessage(APIView):
         plan_expires = customer_obj.plan_expires_at
         is_expired = timezone.now() > plan_expires
         plan = customer_obj.plan
-        if plan == "Free" and len_of_messages>5:
+        if plan == "Free" and len_of_messages>10:
             return self.send_limit_exceeded_on_free_plan(user_obj=user_obj)
         if plan == "Standard" and is_expired:
             return self.plan_expired_on_standard_paln(user_obj=user_obj)

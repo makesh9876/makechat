@@ -8,8 +8,8 @@ from .views import (
 )
 
 urlpatterns = [
-    #path('', home, name='home'),
-    path('incomming_message/', IncommingMessage.as_view(), name="login"),
+    path('', plan_details, name='plan_details'),
+    path('incomming_message/', IncommingMessage.as_view(), name="incomming_message"),
     #path('makechat/',MakeChat.as_view(), name="makechat"),
     #path('invite_user/',MakeChat.as_view(), name="invite_user"),
     #path('register/',register_view, name="register"),
