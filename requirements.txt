@@ -3,3 +3,4 @@ djangorestframework
 ramda
 twilio
 openai
+razorpay

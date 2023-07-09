@@ -4,12 +4,14 @@
 from abc import ABC, abstractmethod
 from twilio.rest import Client
 import openai
+import razorpay
 
-ACCOUNT_ID_TWILLIO = "AC7bb006e27c87a985c52e832c34c781b5"
-AUTH_TOPKEN_TWILLIO = "e67f9b297a51192ec03263001283ab17" # provide the correct key
-OPENAPI_ORG = "org-QmSKgWgHBLzhgxBcP6RUgtcc"
-OPEN_API_KEY = "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"
-
+ACCOUNT_ID_TWILLIO = ""
+AUTH_TOPKEN_TWILLIO = "" # provide the correct key
+OPENAPI_ORG = ""
+OPEN_API_KEY = ""
+RAZORPAY_CLIENT_ID = ""
+RAZORPAY_SECRET = ""
 
 class ClientBuilder(ABC):
     """
@@ -54,3 +56,13 @@ class OpenApiClient(ClientBuilder):
 
     def __str__(self) -> str:
         pass
+
+class RazorPayClient(ClientBuilder):
+    """
+        This class will return the razor pay client
+    """
+    def get_client(self):
+        """
+            return client
+        """
+        return razorpay.Client(auth=(RAZORPAY_CLIENT_ID, RAZORPAY_SECRET))

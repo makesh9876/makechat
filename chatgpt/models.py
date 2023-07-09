@@ -7,6 +7,23 @@ from django.utils import timezone
 
 # Create your models here.
 
+class Orders(models.Model):
+    """
+        handle the order
+    """
+    ORDER_STATUS = (
+        ("pending", "pending"),
+        ("success", "success"),
+        ("failed", "failed"),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    order_id = models.CharField(max_length=100)
+    plan_id = models.CharField(max_length=100)
+    status = models.CharField(max_length=20, choices=ORDER_STATUS)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.user.username
 
 class Customer(models.Model):
     """
@@ -20,6 +37,7 @@ class Customer(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES)
+    plan_expires_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self) -> str:
         return self.user.username

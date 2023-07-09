@@ -1,8 +1,10 @@
 """
     all the logic is implemented here
 """
-#pylint:disable=C0412,E1101,W0127,W0612,W0613,W0621,C0301,W0718
+# pylint:disable=C0412,E1101,W0127,W0612,W0613,W0621,C0301,W0718
 import re
+from django.utils import timezone
+from datetime import timedelta
 from ramda import path_or
 from openai.error import RateLimitError
 from rest_framework.views import APIView
@@ -16,14 +18,140 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from rest_framework import status
 from rest_framework.response import Response
-from .models import Customer, UserMessage, InvitedUsers, ChatMessage, ChatThread
-from .clients import TwillioClient, OpenApiClient
+from .models import Customer, UserMessage, InvitedUsers, ChatMessage, ChatThread, Orders
+from .clients import TwillioClient, OpenApiClient, RazorPayClient
 
+
+PLAN_DETAILS = {
+    "24": {
+        "plan_name" : "Speedy Delight",
+        "amount" : 5,
+        "plan_id" : 24,
+        "duration" : 24
+    },
+    "168": {
+        "plan_name" : "Week-long Wackiness",
+        "amount" : 25,
+        "plan_id" : 168,
+        "duration" : 168
+    },
+    "672": {
+        "plan_name" : "Monthly plan",
+        "amount" : 75,
+        "plan_id" : 672,
+        "duration" : 672
+    }
+}
+
+def checkout(request):
+    """
+        This function handle the checkout
+    """
+    plan_id = request.GET.get("plan_id")
+    if not plan_id:
+        return HttpResponse("Plan not selected")
+    context = PLAN_DETAILS[plan_id]
+    return render(request, 'chatgpt/checkout.html', context)
+
+def plan_details(request):
+    """
+        show the plan details
+    """
+    return render(request, 'chatgpt/plans.html')
+
+def plan_upgrade(request):
+    '''
+        This function will upgrade the plan
+    '''
+    phone_number = request.POST["phoneNumber"]
+    user_obj = DataRetriver().get_user(user_name=phone_number)
+    plan_id = request.GET.get("plan_id")
+    if not phone_number or not phone_number or not user_obj:
+        return HttpResponse("Phone number or plan id to activate is not identified")
+    plan_data = PLAN_DETAILS[plan_id]
+    order = {
+        "amount": path_or(0,["amount"], plan_data)*100,
+        "currency": "INR",
+        "receipt": "receipt#1",
+        "notes": {
+            "user_id": phone_number,
+            "plan_id" : plan_id
+        }
+    }
+    order_response = RazorPayClient().get_client().order.create(data=order)
+    DataRetriver().create_order(user=user_obj, order_res=order_response)
+    order_amount = path_or("", ["amount"], order_response)
+    order_data = {
+        "amount": order_amount,
+        "show_amount": order_amount/100,
+        "user_number": phone_number,
+        "plan_name" : path_or("",["plan_name"], plan_data),
+        "order_id": path_or("", ["id"], order_response)
+    }
+    return render(request, 'chatgpt/payment.html', order_data)
+
+def payment_success(request):
+    """
+        handle the payment success
+    """
+    order_id = request.GET.get("order_id")
+    pending_order = DataRetriver().get_pending_order_by_order_id(
+        order_id=order_id
+    )
+    if not pending_order:
+        return HttpResponse("Unexpected Error happened, please contact admin")
+    pending_order.status = "success"
+    pending_order.save()
+    expires_at = DataRetriver().change_plan(order_obj=pending_order)
+    return HttpResponse("Order sucesss " + order_id +" plan is active till " + str(expires_at))
 
 class DataRetriver:
     """
     handle the user related querues
     """
+    def change_plan(self, order_obj):
+        """
+            This function will change the plan to active
+        """
+        user_obj, customer_obj = DataRetriver().get_user_by_user_name(
+            user_name=order_obj.user.username
+        )
+        customer_obj.plan = "Standard"
+        expires_at = customer_obj.plan_expires_at
+        now = timezone.now()
+        print("Time now -->", now)
+        print('PLan expires time-->', expires_at)
+        if expires_at < now:
+            calculate_time_from = now
+        else:
+            calculate_time_from = expires_at
+        plan_data = path_or({},[order_obj.plan_id],PLAN_DETAILS)
+        plan_duration = path_or(24,["duration"], plan_data)
+        new_expires_at = calculate_time_from + timedelta(hours=plan_duration)
+        print("The new expires at -->", plan_data, new_expires_at)
+        customer_obj.plan_expires_at = new_expires_at
+        customer_obj.save()
+        return new_expires_at
+
+    def create_order(self, user, order_res):
+        """
+            This function create order
+        """
+        return Orders.objects.create(
+            user=user,
+            order_id=path_or("",["id"], order_res),
+            plan_id=path_or("",["notes","plan_id"], order_res),
+            status="pending"
+        )
+
+    def get_pending_order_by_order_id(self, order_id : str):
+        """ 
+            This function return the order by order id by pending status
+        """
+        try:
+            return Orders.objects.get(order_id=order_id, status="pending")
+        except Orders.DoesNotExist:
+            return {}
 
     def get_user(self, user_name):
         """
@@ -54,7 +182,8 @@ class DataRetriver:
         """
         This function create new user
         """
-        user = User.objects.create_user(username=user_name, password="Speed#123")
+        user = User.objects.create_user(
+            username=user_name, password="Speed#123")
         customer = Customer.objects.create(user=user, plan="Free")
         print("=====new user created=>", user)
         return user, customer
@@ -69,7 +198,8 @@ class DataRetriver:
         """
         This function create new message
         """
-        message = UserMessage.objects.create(user=user, content=content, role=role)
+        message = UserMessage.objects.create(
+            user=user, content=content, role=role)
         return message
 
 
@@ -87,7 +217,8 @@ class ChatGpt:
             response = open_api_client.ChatCompletion.create(
                 model="gpt-3.5-turbo", messages=messages
             )
-            message = path_or("", ["choices", 0, "message", "content"], response)
+            message = path_or(
+                "", ["choices", 0, "message", "content"], response)
             DataRetriver().create_message(user=user, content=message, role="system")
             return message
         except RateLimitError as error:
@@ -100,21 +231,24 @@ class ChatGpt:
         """
         messages = []
         for user_msg in user_messages:
-            messages.append({"role": user_msg.role, "content": user_msg.content})
+            messages.append(
+                {"role": user_msg.role, "content": user_msg.content})
         messages.reverse()
         return messages
 
-def makechat_body(response_message : str, user_number: str):
+
+def makechat_body(response_message: str, user_number: str):
     """ 
         This function will return the makechat app body
     """
     return ("Hey Buddy,\n\nYou have been invited to chat on Makechat! Someone has sent you an anonymous invitation to chat with them. \nHere's the message they sent:\n\n"
             + "============================\n\n"
             + response_message + "\n\n"
-             + "============================\n\n"
+            + "============================\n\n"
             + "\n\nJoin the conversation by clicking on the link below:\n"
             + "http://makechattest.com/onboard?phone_number="+user_number
             + "\n\nFeel free to accept the invitation and start chatting. \nRemember, the person who invited you will remain anonymous.\n\nHappy chatting!\nThe Makechat Team")
+
 
 class OutgoingMessage:
     """
@@ -127,20 +261,51 @@ class OutgoingMessage:
         """
         client = TwillioClient().get_client()
         print("======user number", user_number)
-        resposnse_message_list = [response_message[i:i+1600] for i in range(0, len(response_message), 1600)]
+        resposnse_message_list = [response_message[i:i+1600]
+                                  for i in range(0, len(response_message), 1600)]
         for msges in resposnse_message_list:
-            res = client.messages.create(
+             res = client.messages.create(
                 from_="whatsapp:+14155238886",
                 body=msges,
                 to="whatsapp:+91" + user_number,
-            )
-        return res
+             )
+        return {}
 
 
 class IncommingMessage(APIView):
     """
     Handle the incomming message from users
     """
+
+    def send_limit_exceeded_on_free_plan(self, user_obj):
+        """
+            send limit exceeded msg on free plan
+        """
+        OutgoingMessage().send(
+                user_number=str(user_obj.username), response_message="Sorry your limit exceeded on free plan"
+            )
+        return True
+
+    def plan_expired_on_standard_paln(self, user_obj):
+        """
+            This function will send the message to subscribe
+        """
+        OutgoingMessage().send(
+                user_number=str(user_obj.username), response_message="Sorry your plan expired, please activate"
+            )
+        return True
+    def is_expired_plan(self, user_obj, customer_obj, len_of_messages : int):
+        """
+            This function will check if the customer plan is expired or not
+        """
+        plan_expires = customer_obj.plan_expires_at
+        is_expired = timezone.now() > plan_expires
+        plan = customer_obj.plan
+        if plan == "Free" and len_of_messages>5:
+            return self.send_limit_exceeded_on_free_plan(user_obj=user_obj)
+        if plan == "Standard" and is_expired:
+            return self.plan_expired_on_standard_paln(user_obj=user_obj)
+        return False
 
     def post(self, request):
         """
@@ -158,9 +323,13 @@ class IncommingMessage(APIView):
         user_obj, customer_obj = data_retriver.get_user_by_user_name(
             user_name=user_name, create_new_if_not_exists=True
         )
-        data_retriver.create_message(user=user_obj, content=content, role="user")
+        customer_plan = customer_obj.plan
+        data_retriver.create_message(
+            user=user_obj, content=content, role="user")
         old_messages = data_retriver.get_messages_by_user(user=user_obj)
-        print("======retrived messages", old_messages)
+        print("======retrived messages", old_messages, customer_plan)
+        if self.is_expired_plan(user_obj=user_obj, customer_obj=customer_obj, len_of_messages=len(old_messages)):
+            return Response({"status": status.HTTP_200_OK})
         response = ChatGpt().chat(
             user=user_obj,
             messages=ChatGpt().form_conversations(user_messages=old_messages),
@@ -386,7 +555,8 @@ def chat(request):
         return HttpResponse("User is not onboarded yet")
 
     messages_list = (
-        ChatMessage.objects.filter(thread=thread_obj).order_by("-created_at").reverse()
+        ChatMessage.objects.filter(thread=thread_obj).order_by(
+            "-created_at").reverse()
     )
     return render(
         request,
@@ -398,16 +568,4 @@ def chat(request):
             "current_user": request.user.username,
         },
     )
-    # return HttpResponse("chat started between, " + request.user.username + " and " + second_person.username)
 
-# http://127.0.0.1:8000/onboard?phone_number=9442890327
-
-
-#django
-#djangorestframework
-#ramda
-#twilio
-#openai
-#channels
-#daphne
-#channels_redis
