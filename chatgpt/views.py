@@ -43,6 +43,23 @@ PLAN_DETAILS = {
     }
 }
 
+def terms_and_conditions(request):
+    """
+        render the terms and conditions
+    """
+    return render(request, 'chatgpt/terms.html')
+def privacy_policy(request):
+    """
+        render the privacy policy
+    """
+    return render(request, 'chatgpt/privacy.html')
+
+def get_started(request):
+    """
+        render the privacy policy
+    """
+    return render(request, 'chatgpt/get_started.html')
+
 def checkout(request):
     """
         This function handle the checkout
