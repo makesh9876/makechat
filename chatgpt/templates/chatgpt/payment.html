@@ -90,7 +90,9 @@
                                 <li>{{plan_name}}</li>
                             </ul>
                         </div>
+                        <a href="{{link}}">
                         <button id="btn-primary">Pay &#8377;{{show_amount}}</button>
+                    </a>
                     </div>
                 </div>
             </div>
@@ -99,7 +101,7 @@
 </body>
 
 </html>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     var options = {
         "key": "rzp_test_NV9ebxMRp5to5G",
@@ -135,5 +137,5 @@
         rzp1.open();
         e.preventDefault();
     }
-    </script>
+    </script> -->
 {% endblock content %}

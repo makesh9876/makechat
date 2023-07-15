@@ -4,26 +4,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-
 # Create your models here.
-
-class Orders(models.Model):
-    """
-        handle the order
-    """
-    ORDER_STATUS = (
-        ("pending", "pending"),
-        ("success", "success"),
-        ("failed", "failed"),
-    )
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    order_id = models.CharField(max_length=100)
-    plan_id = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, choices=ORDER_STATUS)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return self.user.username
+IMAGE_CHAT_LIMIT_FOR_FREE=3
 
 class Customer(models.Model):
     """
@@ -37,6 +19,7 @@ class Customer(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES)
+    image_quota = models.IntegerField(default=IMAGE_CHAT_LIMIT_FOR_FREE)
     plan_expires_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self) -> str:
@@ -55,6 +38,7 @@ class UserMessage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE, default="user")
     content = models.TextField()
+    message_type = models.CharField(max_length=20, default="text")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
