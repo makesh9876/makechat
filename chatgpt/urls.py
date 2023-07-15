@@ -11,7 +11,7 @@ from .views import (
 )
 
 urlpatterns = [
-    path('', get_started, name='get_started'),
+    path('', QuoteGenerate.as_view(), name='get_started'),
     path('incomming_message/', IncommingMessage.as_view(), name="incomming_message"),
     path('image_generate/', ImageGenerate.as_view(), name="image_generate"),
     #path('makechat/',MakeChat.as_view(), name="makechat"),
