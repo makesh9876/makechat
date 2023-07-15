@@ -120,6 +120,87 @@ class PaymentRedirect(View):
         DataRetriver().change_plan(username=phone_number, plan_id=plan_id)
         return redirect("get_started")
 
+class QuoteGenerate(View):
+    """
+        This class handle the quote geneate
+    """
+    def get_prompt(self, category: str, quantity : str):
+        """
+            this function generate a promt for gpt
+        """
+        default = "create a quote for instagram post with roughly "
+        no_of_words = str(quantity) + "words"
+        category = " about this word " + category
+        assumption = " only reply the quote in sentence"
+        return default + no_of_words + category + assumption
+
+    def get(self, request):
+        """
+            render the quote generator
+        """
+        return render(request, "chatgpt/quote_generator.html")
+    def post(self, request):
+        """
+            generate a instagram quote
+        """
+        category=request.POST["category"]
+        quantity=request.POST["quantity"]
+        if not category:
+            return render(request, "chatgpt/quote_generator.html")
+        prompt = self.get_prompt(
+            category=category,
+            quantity=quantity
+        )
+
+        chatgpt_response = ChatGpt().completions(promt=prompt)
+        context = {
+            "category" : category,
+            "response" : chatgpt_response,
+            "result_type" : "quote",
+            "try_url_name" : "quote_generate"
+        }
+        return render(request, "chatgpt/generate_results.html", context)
+
+class HastagsGenerate(View):
+    """
+        This class handle the hastags geneate
+    """
+    def get_prompt(self, category: str, quantity : str):
+        """
+            this function generate a promt for gpt
+        """
+        default = "create " + str(quantity) + " hastags for instagram post"
+        category = " about this word " + category
+        assumption = " only reply the hastags in paragraph format, do not reply any explanation or anything only reply the hastags"
+        set_example = " for example , for travle reply should be #WanderlustAdventures #ExploreTheWorld #GlobetrotterLife #TravelGoals #RoamFree"
+        return default + category + assumption + set_example
+
+    def get(self, request):
+        """
+            render the quote generator
+        """
+        return render(request, "chatgpt/hastag_generate.html")
+    def post(self, request):
+        """
+            generate a instagram quote
+        """
+        category=request.POST["category"]
+        quantity=request.POST["quantity"]
+        if not category:
+            return render(request, "chatgpt/hastag_generate.html")
+        prompt = self.get_prompt(
+            category=category,
+            quantity=quantity
+        )
+
+        chatgpt_response = ChatGpt().completions(promt=prompt)
+        context = {
+            "category" : category,
+            "response" : chatgpt_response,
+            "result_type" : "hastag",
+            "try_url_name" : "hastag_generate"
+        }
+        return render(request, "chatgpt/generate_results.html", context)
 
 class DataRetriver:
     """

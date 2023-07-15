@@ -6,7 +6,8 @@ from .views import (
     IncommingMessage, MakeChat, register_view, logout,
     login_request, home,Onboard,chat, 
     plan_upgrade, plan_details, checkout,
-    terms_and_conditions, privacy_policy, get_started, ImageGenerate, PaymentRedirect
+    terms_and_conditions, privacy_policy, get_started, ImageGenerate, PaymentRedirect,
+    QuoteGenerate, HastagsGenerate
 )
 
 urlpatterns = [
@@ -25,5 +26,7 @@ urlpatterns = [
     path("checkout/",checkout, name="checkout"),
     path("terms/", terms_and_conditions, name="terms_and_conditions"),
     path("privacy_policy/", privacy_policy, name="privacy_policy"),
-    path("payment_redirect/", PaymentRedirect.as_view(), name="payment_redirect")
+    path("payment_redirect/", PaymentRedirect.as_view(), name="payment_redirect"),
+    path("quote_generate/",QuoteGenerate.as_view(),name="quote_generate"),
+    path("hastag_generate/",HastagsGenerate.as_view(),name="hastag_generate")
 ]

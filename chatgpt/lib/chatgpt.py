@@ -21,7 +21,7 @@ class ChatGpt:
         """
         Generate image
         """
-        #return "https://images.freeimages.com/images/large-previews/228/chain-links-1312683.jpg"
+        # return "https://images.freeimages.com/images/large-previews/228/chain-links-1312683.jpg"
         try:
             open_ai_client = self._get_client()
             response = open_ai_client.Image.create(
@@ -36,7 +36,7 @@ class ChatGpt:
         """
         chat with chatgpt
         """
-        #return "sorry we are unavailable at this moment, please try again"
+        # return "sorry we are unavailable at this moment, please try again"
         try:
             open_api_client = self._get_client()
             response = open_api_client.ChatCompletion.create(
@@ -44,9 +44,29 @@ class ChatGpt:
             )
             message = path_or("", ["choices", 0, "message", "content"], response)
             return message
-        except RateLimitError as error:
+        except (RateLimitError, Exception) as error:
             print("Error", error)
             return "There is a issue at our system, please contact admin to resolve this issue."
+
+    def completions(self, promt: str):
+        """
+        promt completions
+        """
+        try:
+            chat = [
+                {
+                    "role" :"user",
+                    "content" : promt
+                }
+            ]
+            response = self._get_client().ChatCompletion.create(
+                model="gpt-3.5-turbo", messages=chat
+            )
+            message = path_or("", ["choices", 0, "message", "content"], response)
+            return message
+        except Exception as error:
+            print("error------------->", error)
+            return "Unexpected response from Makechat AI bot"
 
     def form_conversations(self, user_messages):
         """
