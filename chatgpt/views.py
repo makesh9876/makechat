@@ -22,8 +22,8 @@ from .lib.chatgpt import ChatGpt
 from .lib.payments import PaymentLinks
 from .lib.twillio import OutgoingMessage
 
-TEXT_CHAT_LIMIT_FOR_FREE = 15
-IMAGE_CHAT_LIMIT_FOR_FREE = 3
+TEXT_CHAT_LIMIT_FOR_FREE = 20
+IMAGE_CHAT_LIMIT_FOR_FREE = 2
 
 PLAN_DETAILS = {
     "24": {"plan_name": "Speedy Delight", "amount": 5, "plan_id": 24, "duration": 24, "image_quota" :3},
@@ -335,11 +335,14 @@ class IncommingMessage(APIView):
             + " messages used during this period.\n"
             + "However, you can still continue using our free plan and enjoy limited chatting. Please note that the limit is based on a 24-hour timeframe, and after this period, your message count will reset.\n"
             + "If you wish to have unlimited chatting without interruptions, you can consider upgrading to our affordable plan for just 5 Rs.\n"
-            + "Upgrading is entirely optional, and you can choose to do so at any time. Stay connected and keep enjoying the conversation!\n"
-            + "Cost of the plan: 5 Rs\n"
-            + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details"
         )
+
+
         return True
+# + "Upgrading is entirely optional, and you can choose to do so at any time. Stay connected and keep enjoying the conversation!\n"
+#             + "Cost of the plan: 5 Rs\n"
+#             + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details"
+#         )
 
     def plan_expired_on_standard_plan(self, user_obj):
         """
