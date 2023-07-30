@@ -69,6 +69,12 @@
         .copy-button:hover {
             background-color: silver;
         }
+        .custom-textarea {
+            /* Your existing CSS styles */
+            /* Set an initial minimum height for the text area */
+            min-height: 150px;
+        }
+
 
     </style>
 </head>
@@ -101,6 +107,28 @@
                 alert("Copy to clipboard failed. Please select and copy manually.");
             });
         }
+        function adjustTextAreaHeight() {
+            const outputTextArea = document.getElementById("output");
+            const scrollHeight = outputTextArea.scrollHeight;
+
+            // Set the height of the text area to the calculated scroll height
+            outputTextArea.style.height = scrollHeight + "px";
+        }
+
+        // Call the adjustTextAreaHeight function when the page loads
+        window.onload = function () {
+            adjustTextAreaHeight();
+        };
+
+        // Call the adjustTextAreaHeight function when the window is resized
+        window.onresize = function () {
+            adjustTextAreaHeight();
+        };
+
+        // Call the adjustTextAreaHeight function when the content changes
+        document.getElementById("output").addEventListener("input", function () {
+            adjustTextAreaHeight();
+        });
     </script>
 </body>
 
