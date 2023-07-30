@@ -4,6 +4,7 @@
 from ramda import path_or
 from openai.error import RateLimitError
 from .clients import OpenApiClient
+from ..models import FreeAiRequests
 
 
 class ChatGpt:
@@ -28,6 +29,7 @@ class ChatGpt:
                 prompt=image_prompt, n=1, size="1024x1024"
             )
             image_url = path_or("", ["data", 0, "url"], response)
+            FreeAiRequests().get_instance().save()
             return image_url
         except Exception:
             return ""
@@ -43,6 +45,7 @@ class ChatGpt:
                 model="gpt-3.5-turbo", messages=messages
             )
             message = path_or("", ["choices", 0, "message", "content"], response)
+            FreeAiRequests().get_instance().save()
             return message
         except (RateLimitError, Exception) as error:
             print("Error", error)
@@ -63,6 +66,7 @@ class ChatGpt:
                 model="gpt-3.5-turbo", messages=chat
             )
             message = path_or("", ["choices", 0, "message", "content"], response)
+            FreeAiRequests().get_instance().save()
             return message
         except Exception as error:
             print("error------------->", error)

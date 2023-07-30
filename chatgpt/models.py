@@ -87,3 +87,19 @@ class ChatMessage(models.Model):
 
     def __str__(self) -> str:
         return str(self.created_at)
+
+class FreeAiRequests(models.Model):
+    """
+        KEEP Track of ai requests
+    """
+    requests_count = models.IntegerField(default=0)
+
+    @classmethod
+    def get_instance(cls):
+        instance, _ = cls.objects.get_or_create(pk=1)
+        return instance
+
+    def save(self, *args, **kwargs):
+        # Increment the counter before saving
+        self.requests_count += 1
+        super(FreeAiRequests, self).save(*args, **kwargs)
