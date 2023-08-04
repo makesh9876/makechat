@@ -1,0 +1,221 @@
+{% extends 'chatgpt/index.html' %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fancy Quiz Form</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* Add custom styles here */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+
+        .card {
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #007bff;
+        }
+
+        .question {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .question p {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .question input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        #navigation {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #prev-btn,
+        #next-btn,
+        #submit-btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        #prev-btn:hover,
+        #next-btn:hover,
+        #submit-btn:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 20px;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Questions by Makechat AI</div>
+                    <div class="card-body">
+                        <h1>{{ prompt }}</h1>
+                        <form id="quiz-form" action="{% url 'submit_quiz' %}" method="post">
+                            {% csrf_token %}
+                            <div id="question-container">
+                                {% for question in response.questions %}
+                                    <div class="question" {% if forloop.first %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                                        <p>{{ question.text }}</p>
+                                        {% for option in question.options %}
+                                            <input type="radio" name="{{ question.text }}" value="{{ option.text }}">{{ option.text }}<br>
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div id="navigation">
+                                <button id="prev-btn" type="button" onclick="showQuestion('prev')">Previous</button>
+                                <button id="next-btn" type="button" onclick="showQuestion('next')">Next</button>
+                                <button id="submit-btn" type="submit" style="display: none;">Submit</button>
+                            </div>
+                            <input type="hidden" name="answers" id="answers" value="">
+                        </form>
+
+                        <div id="result" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add your JavaScript code here if needed -->
+
+</body>
+<script>
+    let currentQuestion = 0;
+    const questions = document.querySelectorAll('.question');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function showQuestion(direction) {
+        questions[currentQuestion].style.display = 'none';
+
+        if (direction === 'prev') {
+            currentQuestion = Math.max(currentQuestion - 1, 0);
+        } else {
+            currentQuestion = Math.min(currentQuestion + 1, questions.length - 1);
+        }
+
+        questions[currentQuestion].style.display = 'block';
+
+        if (currentQuestion === 0) {
+            prevBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'inline-block';
+        }
+
+        if (currentQuestion === questions.length - 1) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'inline-block';
+        } else {
+            nextBtn.style.display = 'inline-block';
+            submitBtn.style.display = 'none';
+        }
+    }
+    function collectAnswers() {
+        const answers = {};
+        questions.forEach((question) => {
+            const questionText = question.querySelector('p').innerText;
+            const selectedOption = question.querySelector('input[type="radio"]:checked');
+
+            if (selectedOption) {
+                answers[questionText] = selectedOption.value;
+            } else {
+                answers[questionText] = 'Not answered';
+            }
+        });
+
+        return answers;
+    }
+
+    function onSubmitForm(event) {
+        event.preventDefault();
+        const answers = collectAnswers();
+        const jsonAnswers = JSON.stringify(answers);
+
+        // Get the CSRF token from the form
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+        // Prepare the data to be sent in the AJAX request
+        const jsonData = {
+            'answers': answers,
+            'questions': {{ response.questions | safe }}
+        };
+
+        // Send AJAX request to Django views with CSRF token in the headers and JSON data as payload
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "submit_quiz" %}');
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', csrfToken);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                // Handle the response
+                const response = JSON.parse(xhr.responseText);
+                console.log(response);
+
+                // Check if the response contains the success status
+                if (response.success) {
+                    // Redirect to the success page
+                    const redirectUrl = `${response.redirect_url}?data=${encodeURIComponent(JSON.stringify(response))}`;
+                    window.location.href = redirectUrl;
+                } else {
+                    // Handle other responses or actions as needed
+                }
+            } else {
+                console.error('Request failed. Status:', xhr.status);
+            }
+        };
+        xhr.send(JSON.stringify(jsonData));
+    }
+    const quizForm = document.getElementById('quiz-form');
+    quizForm.addEventListener('submit', onSubmitForm);
+</script>
+
+</html>
+{% endblock content %}

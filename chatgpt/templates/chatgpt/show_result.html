@@ -1,0 +1,113 @@
+{% extends 'chatgpt/index.html' %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Quiz Result</title>
+    <style>
+        /* Add custom styles here */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+
+        .card {
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            min-height: 200px;
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Additional styles for the score card */
+        .score-card {
+            background-color: #28a745;
+            color: #fff;
+            font-size: 36px;
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .score-title {
+            margin-bottom: 10px;
+        }
+
+        /* Styles for question cards */
+        .question-card {
+            background-color: #f8f9fa;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        .question {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .answer {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .user-answer {
+            color: #007bff;
+        }
+
+        .correct-answer {
+            color: #28a745;
+        }
+
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card score-card">
+                    <div class="score-title">Your Score</div>
+                    <div class="score">{{ data_dict.score }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% for question in data_dict.data %}
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card question-card">
+                    <div class="question">{{ question.quest }}</div>
+                    <div class="card-body">
+                        <p class="answer user-answer">Your answer: {{ question.user_answer }}</p>
+                        <p class="answer correct-answer">Correct answer: {{ question.correct_answer }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+</body>
+
+
+</html>
+{% endblock content %}

@@ -3,7 +3,12 @@
 """
 # pylint:disable=C0412,E1101,W0127,W0612,W0613,W0621,C0301,W0718
 import re
+import json
+import urllib
+from functools import lru_cache
 from datetime import timedelta
+from django.http import JsonResponse
+from django.urls import reverse
 from django.utils import timezone
 from ramda import path_or
 from rest_framework.views import APIView
@@ -26,15 +31,27 @@ TEXT_CHAT_LIMIT_FOR_FREE = 20
 IMAGE_CHAT_LIMIT_FOR_FREE = 2
 
 PLAN_DETAILS = {
-    "24": {"plan_name": "Speedy Delight", "amount": 5, "plan_id": 24, "duration": 24, "image_quota" :3},
+    "24": {
+        "plan_name": "Speedy Delight",
+        "amount": 5,
+        "plan_id": 24,
+        "duration": 24,
+        "image_quota": 3,
+    },
     "168": {
         "plan_name": "Week-long Wackiness",
         "amount": 25,
         "plan_id": 168,
         "duration": 168,
-        "image_quota" : 13
+        "image_quota": 13,
     },
-    "672": {"plan_name": "Monthly plan", "amount": 75, "plan_id": 672, "duration": 672,"image_quota" : 40},
+    "672": {
+        "plan_name": "Monthly plan",
+        "amount": 75,
+        "plan_id": 672,
+        "duration": 672,
+        "image_quota": 40,
+    },
 }
 
 
@@ -120,13 +137,171 @@ class PaymentRedirect(View):
         DataRetriver().change_plan(username=phone_number, plan_id=plan_id)
         return redirect("get_started")
 
+
+class ShowResult(View):
+    """
+    show the result
+    """
+
+    def get_formatted_json(self, data: dict):
+        """
+        this function return the result json in format
+        """
+        answers = path_or({}, ["response", "answers"], data)
+        questions = path_or({}, ["response", "questions"], data)
+        my_answer = []
+        total_question = len(questions)
+        score = 0
+        for each_question in questions:
+            quest = path_or("", ["text"], each_question)
+            correct_answer = next(
+                filter(
+                    lambda answer: answer.get("is_correct") == "true",
+                    each_question["options"],
+                ),
+                None,
+            )
+            user_answer = path_or("", [quest], answers)
+            is_pass = user_answer == correct_answer["text"]
+            if is_pass:
+                score += 1
+            my_answer.append(
+                {
+                    "quest": quest,
+                    "correct_answer": correct_answer["text"],
+                    "user_answer": user_answer,
+                    "is_pass": is_pass,
+                }
+            )
+        return {"data": my_answer, "score": str(score) + "/" + str(total_question)}
+
+    def get(self, request):
+        """
+        get request
+        """
+        data_param = request.GET.get("data")
+        if data_param:
+            try:
+                data_dict = json.loads(urllib.parse.unquote(data_param))
+                res = self.get_formatted_json(data=data_dict)
+                return render(request, "chatgpt/show_result.html", {"data_dict": res})
+            except json.JSONDecodeError:
+                redirect("education")
+        return render(request, "chatgpt/show_result.html")
+
+
+def submit_quiz_view(request):
+    """
+    submit the quize
+    """
+    if request.method == "POST":
+        data = request.body.decode("utf-8")
+        json_data = json.loads(data)
+        url = reverse("show_result")
+        data = {"success": True, "response": json_data, "redirect_url": url}
+        return JsonResponse(data)
+
+
+@lru_cache
+def get_gpt_response(prompt: str):
+    """
+    return res
+    """
+    return ChatGpt().completions(promt=prompt)
+
+
+class Education(View):
+    """
+    This class handle the education geneate
+    """
+
+    def get_prompt(self, category: str):
+        """
+        this function generate a promt for gpt
+        """
+        first = "i want you to act as a teacher with skills in all education, and reply with 5 questions with 4 options of each question, your reply should be in json format, do not reply anything other than json.The json format is below,"
+        format_res = {
+            "prompt": "my_prompt",
+            "questions": [
+                {
+                    "text": "1 st question",
+                    "options": [
+                        {"text": "option 1", "is_correct": "false"},
+                        {"text": "option 2", "is_correct": "false"},
+                        {"text": "option 3", "is_correct": "false"},
+                        {"text": "option 4", "is_correct": "true"},
+                    ],
+                }
+            ],
+        }
+        explanation = "reply format should be json parseable by python json loads and use double quotes for string"
+        prompt = " your prompt is : " + category
+        return first + explanation + str(format_res) + prompt
+
+    def get(self, request):
+        """
+        render the quote generator
+        """
+        return render(request, "chatgpt/image_generate.html")
+
+    def post(self, request):
+        """
+        generate a instagram quote
+        """
+        category = request.POST["category"]
+        if not category:
+            return render(request, "chatgpt/image_generate.html")
+        prompt = self.get_prompt(
+            category=category,
+        )
+        chatgpt_response = get_gpt_response(prompt=prompt)
+        context = {
+            "category": category,
+            "response": json.loads(chatgpt_response),
+            "result_type": "quote",
+            "try_url_name": "quote_generate",
+        }
+        return render(request, "chatgpt/questions.html", context)
+
+
+class ProdiaImageGenerate(View):
+    """
+    This class handle the quote geneate
+    """
+
+    def get(self, request):
+        """
+        render the quote generator
+        """
+        return render(request, "chatgpt/image_generate.html")
+
+    def post(self, request):
+        """
+        generate a instagram quote
+        """
+        image_prompt = request.POST["image_prompt"]
+        if not image_prompt:
+            return render(request, "chatgpt/image_generate.html")
+
+        image_url = Prodia().image(prompt=image_prompt)
+        context = {
+            "category": image_prompt,
+            "image_url": image_url,
+            "result_type": "quote",
+            "try_url_name": "quote_generate",
+        }
+        print(context, "2222222222222")
+        return render(request, "chatgpt/generate_results.html", context)
+
+
 class QuoteGenerate(View):
     """
-        This class handle the quote geneate
+    This class handle the quote geneate
     """
-    def get_prompt(self, category: str, quantity : str):
+
+    def get_prompt(self, category: str, quantity: str):
         """
-            this function generate a promt for gpt
+        this function generate a promt for gpt
         """
         default = "create a quote for instagram post with roughly "
         no_of_words = str(quantity) + "words"
@@ -136,38 +311,38 @@ class QuoteGenerate(View):
 
     def get(self, request):
         """
-            render the quote generator
+        render the quote generator
         """
         return render(request, "chatgpt/quote_generator.html")
+
     def post(self, request):
         """
-            generate a instagram quote
+        generate a instagram quote
         """
-        category=request.POST["category"]
-        quantity=request.POST["quantity"]
+        category = request.POST["category"]
+        quantity = request.POST["quantity"]
         if not category:
             return render(request, "chatgpt/quote_generator.html")
-        prompt = self.get_prompt(
-            category=category,
-            quantity=quantity
-        )
+        prompt = self.get_prompt(category=category, quantity=quantity)
 
         chatgpt_response = ChatGpt().completions(promt=prompt)
         context = {
-            "category" : category,
-            "response" : chatgpt_response,
-            "result_type" : "quote",
-            "try_url_name" : "quote_generate"
+            "category": category,
+            "response": chatgpt_response,
+            "result_type": "quote",
+            "try_url_name": "quote_generate",
         }
         return render(request, "chatgpt/generate_results.html", context)
 
+
 class HastagsGenerate(View):
     """
-        This class handle the hastags geneate
+    This class handle the hastags geneate
     """
-    def get_prompt(self, category: str, quantity : str):
+
+    def get_prompt(self, category: str, quantity: str):
         """
-            this function generate a promt for gpt
+        this function generate a promt for gpt
         """
         default = "create " + str(quantity) + " hastags for instagram post"
         category = " about this word " + category
@@ -177,30 +352,29 @@ class HastagsGenerate(View):
 
     def get(self, request):
         """
-            render the quote generator
+        render the quote generator
         """
         return render(request, "chatgpt/hastag_generate.html")
+
     def post(self, request):
         """
-            generate a instagram quote
+        generate a instagram quote
         """
-        category=request.POST["category"]
-        quantity=request.POST["quantity"]
+        category = request.POST["category"]
+        quantity = request.POST["quantity"]
         if not category:
             return render(request, "chatgpt/hastag_generate.html")
-        prompt = self.get_prompt(
-            category=category,
-            quantity=quantity
-        )
+        prompt = self.get_prompt(category=category, quantity=quantity)
 
         chatgpt_response = ChatGpt().completions(promt=prompt)
         context = {
-            "category" : category,
-            "response" : chatgpt_response,
-            "result_type" : "hastag",
-            "try_url_name" : "hastag_generate"
+            "category": category,
+            "response": chatgpt_response,
+            "result_type": "hastag",
+            "try_url_name": "hastag_generate",
         }
         return render(request, "chatgpt/generate_results.html", context)
+
 
 class DataRetriver:
     """
@@ -217,7 +391,7 @@ class DataRetriver:
         plan_data = path_or({}, [plan_id], PLAN_DETAILS)
         customer_obj.plan = "Standard"
         current_image_quota = customer_obj.image_quota
-        new_image_quota = current_image_quota + path_or(0,["image_quota"], plan_data)
+        new_image_quota = current_image_quota + path_or(0, ["image_quota"], plan_data)
         customer_obj.image_quota = new_image_quota
         expires_at = customer_obj.plan_expires_at
         now = timezone.now()
@@ -274,15 +448,12 @@ class DataRetriver:
         """
         return UserMessage.objects.filter(user=user).order_by("-created_at")
 
-    def create_message(self, user, content, role="user",message_type="text"):
+    def create_message(self, user, content, role="user", message_type="text"):
         """
         This function create new message
         """
         message = UserMessage.objects.create(
-            user=user,
-            content=content,
-            role=role,
-            message_type=message_type
+            user=user, content=content, role=role, message_type=message_type
         )
         return message
 
@@ -304,7 +475,7 @@ def makechat_body(response_message: str, user_number: str):
     )
 
 
-class ImageGenerate(APIView):
+class ImageGenerate(View):
     """
     generate image
     """
@@ -315,7 +486,9 @@ class ImageGenerate(APIView):
         """
         data = request.data.dict()
         image_prompt = path_or("", ["Body"], data)
-        image_url = ChatGpt().generate_image(image_prompt=image_prompt)
+        # image_url = ChatGpt().generate_image(image_prompt=image_prompt)
+        image_url = Prodia().image(prompt=image_prompt)
+        print("33333333333333", image_url)
         return Response({"status": status.HTTP_200_OK})
 
 
@@ -331,18 +504,21 @@ class IncommingMessage(APIView):
         OutgoingMessage().send(
             user_number=str(user_obj.username),
             response_message="Oops! It seems that you have reached the limit of our free plan for the past 24 hours, with a total of "
-            + str(TEXT_CHAT_LIMIT_FOR_FREE) + " text message or " + str(IMAGE_CHAT_LIMIT_FOR_FREE)+ " image request"
+            + str(TEXT_CHAT_LIMIT_FOR_FREE)
+            + " text message or "
+            + str(IMAGE_CHAT_LIMIT_FOR_FREE)
+            + " image request"
             + " messages used during this period.\n"
-            + "However, you can still continue using our free plan and enjoy limited chatting. Please note that the limit is based on a 24-hour timeframe, and after this period, your message count will reset.\n"
+            + "However, you can still continue using our free plan and enjoy limited chatting. Please note that the limit is based on a 24-hour timeframe, and after this period, your message count will reset.\n",
         )
 
-
         return True
-#             + "If you wish to have unlimited chatting without interruptions, you can consider upgrading to our affordable plan for just 5 Rs.\n"
-# + "Upgrading is entirely optional, and you can choose to do so at any time. Stay connected and keep enjoying the conversation!\n"
-#             + "Cost of the plan: 5 Rs\n"
-#             + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details"
-#         )
+
+    #             + "If you wish to have unlimited chatting without interruptions, you can consider upgrading to our affordable plan for just 5 Rs.\n"
+    # + "Upgrading is entirely optional, and you can choose to do so at any time. Stay connected and keep enjoying the conversation!\n"
+    #             + "Cost of the plan: 5 Rs\n"
+    #             + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details"
+    #         )
 
     def plan_expired_on_standard_plan(self, user_obj):
         """
@@ -357,20 +533,19 @@ class IncommingMessage(APIView):
 
     def plan_expired_for_image_quota(self, user_obj):
         """
-            THis function will send message for
-            plan expired or image qota expired
+        THis function will send message for
+        plan expired or image qota expired
         """
         OutgoingMessage().send(
-                user_number=str(user_obj.username),
-                response_message="Oops! It seems your plan expired or image quota reached limit, Subscribe now!\nCost of plan : 5rs\n"
-                + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details",
-            )
+            user_number=str(user_obj.username),
+            response_message="Oops! It seems your plan expired or image quota reached limit, Subscribe now!\nCost of plan : 5rs\n"
+            + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details",
+        )
         return True
 
-
-    def is_text_message_expired(self, data : dict, len_of_messages: int):
+    def is_text_message_expired(self, data: dict, len_of_messages: int):
         """
-            This function will check does this user is expired
+        This function will check does this user is expired
         """
         plan_expires = data["customer"].plan_expires_at
         is_expired = timezone.now() > plan_expires
@@ -378,29 +553,33 @@ class IncommingMessage(APIView):
         if plan == "Free" and len_of_messages > TEXT_CHAT_LIMIT_FOR_FREE:
             return self.send_limit_exceeded_on_free_plan(user_obj=data["user"])
 
-        if plan == "Standard" and is_expired and len_of_messages > TEXT_CHAT_LIMIT_FOR_FREE:
+        if (
+            plan == "Standard"
+            and is_expired
+            and len_of_messages > TEXT_CHAT_LIMIT_FOR_FREE
+        ):
             return self.plan_expired_on_standard_plan(user_obj=data["user"])
         return False
 
-    def is_image_message_expired(self, data : dict, len_of_messages: int):
+    def is_image_message_expired(self, data: dict, len_of_messages: int):
         """
-            This function will check does this user is expired
+        This function will check does this user is expired
         """
         plan_expires = data["customer"].plan_expires_at
         is_expired = timezone.now() > plan_expires
         plan = data["customer"].plan
         image_quota = data["customer"].image_quota
         customer_obj = data["customer"]
-        if plan == "Free" and customer_obj.image_quota==0:
+        if plan == "Free" and customer_obj.image_quota == 0:
             return self.send_limit_exceeded_on_free_plan(user_obj=data["user"])
 
-        if plan == "Standard" and is_expired or image_quota==0:
+        if plan == "Standard" and is_expired or image_quota == 0:
             return self.plan_expired_for_image_quota(user_obj=data["user"])
         return False
 
-    def get_request_type(self, message_body : str):
+    def get_request_type(self, message_body: str):
         """
-            This function will return the request type
+        This function will return the request type
         """
         striped_message = message_body.strip()
         striped_message = striped_message[0:6].lower()
@@ -410,13 +589,13 @@ class IncommingMessage(APIView):
 
     def get_old_messages(self, user_obj):
         """
-            THis function gets the old messages
+        THis function gets the old messages
         """
         return DataRetriver().get_messages_by_user(user=user_obj)
 
-    def filter_message_by_request_type(self, request_type : str, messages: list):
+    def filter_message_by_request_type(self, request_type: str, messages: list):
         """
-            This function will filter the message by type
+        This function will filter the message by type
         """
         res = []
         for message in messages:
@@ -424,9 +603,9 @@ class IncommingMessage(APIView):
                 res.append(message)
         return res
 
-    def filter_message_by_hrs(self, messages: list, hrs : int = 24):
+    def filter_message_by_hrs(self, messages: list, hrs: int = 24):
         """
-            This function will filter the messages by hrs
+        This function will filter the messages by hrs
         """
         res = []
         now_time = timezone.now()
@@ -438,9 +617,11 @@ class IncommingMessage(APIView):
 
     def reply_text_message(self, data):
         """
-            reply for text message
+        reply for text message
         """
-        DataRetriver().create_message(user=data["user"], content=data["content"], role="user")
+        DataRetriver().create_message(
+            user=data["user"], content=data["content"], role="user"
+        )
         old_messages = self.filter_message_by_request_type(
             request_type="text", messages=self.get_old_messages(user_obj=data["user"])
         )
@@ -448,26 +629,33 @@ class IncommingMessage(APIView):
             messages=old_messages, hrs=24
         )
         print("-------------", messages_within_time_frame)
-        if self.is_text_message_expired(data=data, len_of_messages=len(messages_within_time_frame)):
+        if self.is_text_message_expired(
+            data=data, len_of_messages=len(messages_within_time_frame)
+        ):
             print("========plan expired====")
             return {}
         print("conversing with chatgpt====")
         response = ChatGpt().chat(
             messages=ChatGpt().form_conversations(user_messages=old_messages[0:10]),
         )
-        DataRetriver().create_message(user=data["user"], content=response, role="system")
+        DataRetriver().create_message(
+            user=data["user"], content=response, role="system"
+        )
         send_message = OutgoingMessage().send(
             user_number=str(data["user"].username), response_message=response
         )
         return send_message
 
-
-
     def reply_image_message(self, data):
         """
-            reply with image
+        reply with image
         """
-        DataRetriver().create_message(user=data["user"], content=data["content"], role="user", message_type="image")
+        DataRetriver().create_message(
+            user=data["user"],
+            content=data["content"],
+            role="user",
+            message_type="image",
+        )
         old_messages = self.filter_message_by_request_type(
             request_type="image", messages=self.get_old_messages(user_obj=data["user"])
         )
@@ -475,18 +663,21 @@ class IncommingMessage(APIView):
             messages=old_messages, hrs=24
         )
         print("-------------", messages_within_time_frame)
-        if self.is_image_message_expired(data=data, len_of_messages=len(messages_within_time_frame)):
+        if self.is_image_message_expired(
+            data=data, len_of_messages=len(messages_within_time_frame)
+        ):
             print("========plan expired====")
             return {}
-        response = ChatGpt().generate_image(image_prompt=data["content"]),
+        response = (ChatGpt().generate_image(image_prompt=data["content"]),)
         customer_obj = data["customer"]
-        customer_obj.image_quota = customer_obj.image_quota-1
+        customer_obj.image_quota = customer_obj.image_quota - 1
         customer_obj.save()
         send_message = OutgoingMessage().send(
-            user_number=str(data["user"].username), response_message="Image", mediaurl=response
+            user_number=str(data["user"].username),
+            response_message="Image",
+            mediaurl=response,
         )
         return send_message
-
 
     def post(self, request):
         """
@@ -507,23 +698,19 @@ class IncommingMessage(APIView):
         customer_plan = customer_obj.plan
         request_type = self.get_request_type(message_body=content)
         data = {
-            "user" : user_obj,
-            "customer" : customer_obj,
-            "content" : content,
-            "request_type" : "text"
+            "user": user_obj,
+            "customer": customer_obj,
+            "content": content,
+            "request_type": "text",
         }
         if request_type == "image":
             data["request_type"] = "image"
             new_content = data["content"].replace("image/", "")
             data["content"] = new_content
-            response = self.reply_image_message(
-                data=data
-            )
+            response = self.reply_image_message(data=data)
         if request_type == "text":
             data["request_type"] = "text"
-            response = self.reply_text_message(
-                data=data
-            )
+            response = self.reply_text_message(data=data)
         return Response({"status": status.HTTP_200_OK})
 
     def get(self, request):
