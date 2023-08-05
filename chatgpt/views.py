@@ -219,7 +219,7 @@ class Education(View):
         """
         this function generate a promt for gpt
         """
-        first = "i want you to act as a teacher with skills in all education, and reply with 5 questions with 4 options of each question, your reply should be in json format, do not reply anything other than json.The json format is below,"
+        first = "i want you to act as a teacher with skills in all education, and reply with 10 questions with 4 options of each question, your reply should be in json format, do not reply anything other than json.The json format is below,"
         format_res = {
             "prompt": "my_prompt",
             "questions": [
@@ -248,20 +248,24 @@ class Education(View):
         """
         generate a instagram quote
         """
-        category = request.POST["category"]
-        if not category:
-            return render(request, "chatgpt/image_generate.html")
-        prompt = self.get_prompt(
-            category=category,
-        )
-        chatgpt_response = get_gpt_response(prompt=prompt)
-        context = {
-            "category": category,
-            "response": json.loads(chatgpt_response),
-            "result_type": "quote",
-            "try_url_name": "quote_generate",
-        }
-        return render(request, "chatgpt/questions.html", context)
+        try:
+            category = request.POST["category"]
+            if not category:
+                return render(request, "chatgpt/image_generate.html")
+            prompt = self.get_prompt(
+                category=category,
+            )
+            chatgpt_response = get_gpt_response(prompt=prompt)
+            context = {
+                "category": category,
+                "response": json.loads(chatgpt_response),
+                "result_type": "quote",
+                "try_url_name": "quote_generate",
+            }
+            return render(request, "chatgpt/questions.html", context)
+        except Exception as error:
+            print("Error -> ", error)
+            return HttpResponse("Oops! Something unexpected happened while processing your request. Don't worry, our team has been notified and is working to fix it. Please try again later or contact support(techveins01@gmail.com) if the issue persists. Thank you for your understanding!")
 
 
 class ProdiaImageGenerate(View):
