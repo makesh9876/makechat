@@ -138,13 +138,11 @@
             <form action="" method="post">
               {% csrf_token %}
               <div class="form-group">
-                <label for="emailOrPhone">Phone Number:</label>
-                <input type="text" id="emailOrPhone" name="emailOrPhone" pattern="[0-9]*" inputmode="numeric"
+                <input type="text" id="emailOrPhone" name="emailOrPhone" placeholder="Phone Number" pattern="[0-9]*" inputmode="numeric"
                   minlength="10" maxlength="10" required>
               </div>
               <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" minlength="6" required>
+                <input type="password" id="password" placeholder="Password" name="password" minlength="6" required>
               </div>
               <button type="submit">Login</button>
             </form>
