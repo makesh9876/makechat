@@ -265,7 +265,9 @@ class Education(View):
             return render(request, "chatgpt/questions.html", context)
         except Exception as error:
             print("Error -> ", error)
-            return HttpResponse("Oops! Something unexpected happened while processing your request. Don't worry, our team has been notified and is working to fix it. Please try again later or contact support(techveins01@gmail.com) if the issue persists. Thank you for your understanding!")
+            return HttpResponse(
+                "Oops! Something unexpected happened while processing your request. Don't worry, our team has been notified and is working to fix it. Please try again later or contact support(techveins01@gmail.com) if the issue persists. Thank you for your understanding!"
+            )
 
 
 class ProdiaImageGenerate(View):
@@ -467,15 +469,15 @@ def makechat_body(response_message: str, user_number: str):
     This function will return the makechat app body
     """
     return (
-        "Hey Buddy,\n\nYou have been invited to chat on Makechat! Someone has sent you an anonymous invitation to chat with them. \nHere's the message they sent:\n\n"
+        "Hey Buddy,\n\nYou have been invited to Makechat! Someone has sent you an anonymous invitation. \nHere's the message they sent:\n\n"
         + "============================\n\n"
         + response_message
         + "\n\n"
         + "============================\n\n"
-        + "\n\nJoin the conversation by clicking on the link below:\n"
-        + "http://makechattest.com/onboard?phone_number="
+        + "\n\nJoin makechat by clicking on the link below:\n"
+        + "https://makechat.pythonanywhere.com/onboard?phone_number="
         + user_number
-        + "\n\nFeel free to accept the invitation and start chatting. \nRemember, the person who invited you will remain anonymous.\n\nHappy chatting!\nThe Makechat Team"
+        + "\n\nFeel free to accept the invitation and start makechat. \nRemember, the person who invited you will remain anonymous.\n\nHappy makechat!\nThe Makechat Team"
     )
 
 
@@ -765,10 +767,13 @@ class MakeChat(View):
                 invite_from=request.user,
                 invite_to=str(phone_number),
             )
+        message_content = makechat_body(
+            response_message=message_to_user, user_number=phone_number
+        )
 
         OutgoingMessage().send(
             user_number=phone_number,
-            response_message=str(message_to_user),
+            response_message=message_content,
         )
 
         return redirect("home")
@@ -901,6 +906,50 @@ def home(request):
         {"invited_by_you": invited_by_you, "invited_by_others": invited_by_others},
     )
 
+def save_message_to_database(message_val, sender, room_name):
+    """
+        chat message save to db
+    """
+    thread_id = room_name
+    chat_thread = ChatThread.objects.filter(thread_id=thread_id).first()
+    receiver = chat_thread.second_person
+    sender = DataRetriver().get_user(user_name=sender)
+    chat_message = ChatMessage(
+        thread=chat_thread, sender=sender, receiver=receiver, message=message_val
+    )
+    chat_message.save()
+
+def chatting(request, room_name, username, chat_with):
+    """
+    chatting
+    """
+    if request.method == "POST":
+        print(request.body)
+        save_message_to_database(
+            message_val = request.POST['message'],
+            sender=username,
+            room_name=room_name
+        )
+        #return HttpResponse("mESSSAGE DONE")
+    if request.user.username != username:
+        return HttpResponse("User name not matching")
+    try:
+        thread_obj = ChatThread.objects.filter(thread_id=room_name).first()
+        if thread_obj.second_person.username == request.user.username:
+            if not chat_with == "unknown":
+                return HttpResponse("Unknown URL")
+        messages_list = (
+            ChatMessage.objects.filter(thread=thread_obj)
+            .order_by("-created_at")
+            .reverse()
+        )
+        context = {"messages": messages_list, "chat_with" : chat_with}
+        return render(
+            request, "chatgpt/room.html", context
+        )
+    except ChatThread.DoesNotExist:
+        return HttpResponse("User is not onboarded yet")
+
 
 def chat(request):
     """
@@ -925,21 +974,4 @@ def chat(request):
             )
         thread_id = str(person_obj.id) + "_" + str(request.user.id)
         chat_with = "unknown"
-    try:
-        thread_obj = ChatThread.objects.filter(thread_id=thread_id).first()
-    except ChatThread.DoesNotExist:
-        return HttpResponse("User is not onboarded yet")
-
-    messages_list = (
-        ChatMessage.objects.filter(thread=thread_obj).order_by("-created_at").reverse()
-    )
-    return render(
-        request,
-        "chatgpt/room.html",
-        {
-            "room_name": thread_id,
-            "older_messages": messages_list,
-            "chat_with": chat_with,
-            "current_user": request.user.username,
-        },
-    )
+    return redirect("chat_room", room_name=thread_id, username=request.user.username,chat_with=chat_with)

@@ -72,9 +72,9 @@
     <div class="row justify-content-center">
       <div class="col-md-6">
         <div class="card">
-          <div class="card-header">Invite to chat</div>
+          <div class="card-header">Invite to makechat</div>
           <div class="card-body">
-            <p class="welcome-text">Invite someone to chat with you anonymously. They won't know who sent the
+            <p class="welcome-text">Invite someone to makechat anonymously. They won't know who sent the
               invitation!</p>
               <form action="{% url 'invite_user' %}" method="post">
                 {% csrf_token %}
@@ -87,7 +87,7 @@
                 <div class="form-group">
                   <label for="welcomemessage">Welcome Message</label>
                   <input type="text" id="welcomemessage" name="welcomemessage" class="form-control"
-                    placeholder="Hey John, I would like to chat with you..." required>
+                    placeholder="Hey kathy, let's start using makechat ..." required>
                 </div>
                 {% if user.is_authenticated %}
                 <button type="submit" class="btn btn-primary">Send Invite</button>
@@ -108,14 +108,13 @@
           <div class="card-header">Invited user will receive the message like this</div>
           <div class="card-body">
             <p>Hey Buddy,</p>
-            <p>You have been invited to chat on Makechat! Someone has sent you an anonymous invitation to chat with
-              them. Here's the  message they sent:</p>
-            <p style="color: grey;">Hey John, I would like to chat with you...</p>
-            <p>Join the conversation by clicking on the link below:</p>
+            <p>You have been invited to Makechat! Someone has sent you an anonymous invitation. Here's the  message they sent:</p>
+            <p style="color: grey;">Hey kathy, let's start using makechat...</p>
+            <p>Join makechat by clicking on the link below:</p>
             <p><a href="#">Click here to join the chat</a></p>
-            <p>Feel free to accept the invitation and start chatting. Remember, the person who invited you will remain
+            <p>Feel free to accept the invitation and start makechat. Remember, the person who invited you will remain
               anonymous.</p>
-            <p>Happy chatting!<br>The Makechat Team</p>
+            <p>Happy makechat!<br>The Makechat Team</p>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Chat Room</title>
+    <!-- <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script> -->
     <style>
         /* Apply CSS styling for chat room */
         body {
@@ -41,10 +42,11 @@
             background-color: cyan;
             overflow-y: scroll;
         }
+
         #chat-input-container {
-        display: flex;
-        align-items: center;
-    }
+            display: flex;
+            align-items: center;
+        }
 
         .message-receiver {
             text-align: left;
@@ -63,16 +65,17 @@
             margin-bottom: 10px;
             display: block;
         }
+
         #chat-message-input {
-        flex: 1;
-        padding: 12px;
-        margin-top: 10px;
-        border: 1px solid #000000;
-        border-radius: 20px;
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        background-color: #f6f6f6;
-        outline: none;
-    }
+            flex: 1;
+            padding: 12px;
+            margin-top: 10px;
+            border: 1px solid #000000;
+            border-radius: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            background-color: #f6f6f6;
+            outline: none;
+        }
 
         #chat-message-input:hover,
         #chat-message-input:focus {
@@ -80,18 +83,18 @@
         }
 
         #chat-message-submit {
-        margin-left: 10px;
-        padding: 15px 25px;
-        background-color: skyblue;
-        color: #ffffff;
-        border: none;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: bold;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: background-color 0.5s;
-    }
+            margin-left: 10px;
+            padding: 15px 25px;
+            background-color: skyblue;
+            color: #ffffff;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background-color 0.5s;
+        }
 
 
         #chat-message-submit:hover {
@@ -101,14 +104,15 @@
 </head>
 
 <body>
-    <div id="chat-container">
+    <div id="chat-container" class="parent">
         <div id="chat-header">
-            <h2 style="text-align: center; font-size: 24px; color: #333; text-transform: uppercase; letter-spacing: 2px; padding: 10px; background-color: #f6f6f6; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px;">
+            <h2
+                style="text-align: center; font-size: 24px; color: #333; text-transform: uppercase; letter-spacing: 2px; padding: 10px; background-color: #f6f6f6; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px;">
                 Talking to: {{ chat_with }}
             </h2>
         </div>
-        <div id="chat-log">
-            {% for message in older_messages %}
+        <div id="chat-log" class="messagedo">
+            {% for message in messages %}
             {% if message.sender.username == chat_with %}
             <div class="message-receiver">
                 <span>{{ message.message }}</span>
@@ -127,91 +131,127 @@
             {% endfor %}
         </div>
 
-        <div id="chat-input-container">
-            <input id="chat-message-input" type="text" placeholder="Type a message" />
-            <input id="chat-message-submit" type="button" value="Send" />
+        <div id="chat-input-container" class="form">
+            <form action="" id="message" method="POST">
+                {% csrf_token %}
+                <input id="chat-message-input" type="text" placeholder="Type a message" />
+                <input class="submit" id="chat-message-submit" type="submit" value="Send" />
+            </form>
         </div>
+
     </div>
-    {{ room_name|json_script:"room-name" }}
-    <script>
-        // Clear URL parameters
-
-        function clearCSRFParam() {
-            var url = window.location.href;
-            var updatedURL = url.replace(/[\?&]csrfmiddlewaretoken=[^&#]+/, "?");
-            window.history.replaceState({}, document.title, updatedURL);
-        }
-    </script>
-    <script>
-        const roomName = JSON.parse(
-            document.getElementById("room-name").textContent
-        );
-
-        const chatSocket = new WebSocket(
-            "ws://" + window.location.host + "/ws/chat/" + roomName + "/"
-        );
-
-        chatSocket.onmessage = function (e) {
-            const data = JSON.parse(e.data);
-            const chatLog = document.querySelector("#chat-log");
-            const newMessage = document.createElement("p");
-            if ('{{chat_with}}' == 'unknown' && data.iden_user == 'unknown') {
-                newMessage.classList.add("message-sender");
-            } else if ('{{chat_with}}' == data.iden_user && '{{chat_with}}' != 'unknown') {
-                newMessage.classList.add("message-sender");
-            }
-            else {
-                newMessage.classList.add("message-receiver");
-            }
-            newMessage.textContent = data.message;
-            chatLog.appendChild(newMessage);
-            chatLog.scrollTop = chatLog.scrollHeight;
-        };
-
-        chatSocket.onclose = function (e) {
-            console.error("Chat socket closed unexpectedly");
-        };
-
-        const messageInput = document.querySelector("#chat-message-input");
-        const messageSubmit = document.querySelector("#chat-message-submit");
-
-        messageInput.addEventListener("keydown", function (e) {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                messageSubmit.click();
-            }
-        });
-        messageInput.addEventListener("input", function () {
-            const message = messageInput.value.trim();
-            if (message) {
-                messageSubmit.disabled = false; // Enable the send button
-                messageSubmit.style.backgroundColor = "black"; // Change the button color to black
-            } else {
-                messageSubmit.disabled = true; // Disable the send button
-                messageSubmit.style.backgroundColor = "skyblue"; // Change the button color back to skyblue
-            }
-        });
-
-        messageSubmit.addEventListener("click", function () {
-            const message = messageInput.value.trim();
-            if (message) {
-                chatSocket.send(
-                    JSON.stringify({
-                        message: message,
-                        iden_user: '{{chat_with}}'
-                    })
-                );
-                messageInput.value = "";
-                messageSubmit.disabled = true; // Disable the send button
-                messageSubmit.style.backgroundColor = "skyblue";
-            }
-        });
-        const chatLog = document.querySelector("#chat-log");
-        chatLog.scrollTop = chatLog.scrollHeight;
-        window.addEventListener("load", clearCSRFParam);
-
-    </script>
 </body>
+<script>
+$(document).on('submit', '#message', function(e){
+    e.preventDefault();
+    $.ajax({
+        type: 'POST',
+        url: "",
+        data: {
+            message: $('#chat-message-input').val(),
+            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+        }
+    });
+    $('#chat-message-input').val('');
+    $( ".messagedo" ).load(window.location.href + " .messagedo" );
+    var chatLog = $('#chat-log');
+    chatLog.scrollTop(chatLog.prop("scrollHeight"));
+})
+
+$(document).ready(function(){
+    var chatLog = $('#chat-log');
+    chatLog.scrollTop(chatLog.prop("scrollHeight"));
+    setInterval(function(){
+        $( ".messagedo" ).load(window.location.href + " .messagedo" );
+    }, 1000)
+    chatLog.scrollTop(chatLog.prop("scrollHeight"));
+})
+    </script>
+
+
+
 
 </html>
 {% endblock content %}
+
+
+
+
+<!-- <script>
+    // Clear URL parameters
+
+    function clearCSRFParam() {
+        var url = window.location.href;
+        var updatedURL = url.replace(/[\?&]csrfmiddlewaretoken=[^&#]+/, "?");
+        window.history.replaceState({}, document.title, updatedURL);
+    }
+</script>
+<script>
+    const roomName = JSON.parse(
+        document.getElementById("room-name").textContent
+    );
+
+    const chatSocket = new WebSocket(
+        "ws://" + window.location.host + "/ws/chat/" + roomName + "/"
+    );
+
+    chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        const chatLog = document.querySelector("#chat-log");
+        const newMessage = document.createElement("p");
+        if ('{{chat_with}}' == 'unknown' && data.iden_user == 'unknown') {
+            newMessage.classList.add("message-sender");
+        } else if ('{{chat_with}}' == data.iden_user && '{{chat_with}}' != 'unknown') {
+            newMessage.classList.add("message-sender");
+        }
+        else {
+            newMessage.classList.add("message-receiver");
+        }
+        newMessage.textContent = data.message;
+        chatLog.appendChild(newMessage);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    chatSocket.onclose = function (e) {
+        console.error("Chat socket closed unexpectedly");
+    };
+
+    const messageInput = document.querySelector("#chat-message-input");
+    const messageSubmit = document.querySelector("#chat-message-submit");
+
+    messageInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            messageSubmit.click();
+        }
+    });
+    messageInput.addEventListener("input", function () {
+        const message = messageInput.value.trim();
+        if (message) {
+            messageSubmit.disabled = false; // Enable the send button
+            messageSubmit.style.backgroundColor = "black"; // Change the button color to black
+        } else {
+            messageSubmit.disabled = true; // Disable the send button
+            messageSubmit.style.backgroundColor = "skyblue"; // Change the button color back to skyblue
+        }
+    });
+
+    messageSubmit.addEventListener("click", function () {
+        const message = messageInput.value.trim();
+        if (message) {
+            chatSocket.send(
+                JSON.stringify({
+                    message: message,
+                    iden_user: '{{chat_with}}'
+                })
+            );
+            messageInput.value = "";
+            messageSubmit.disabled = true; // Disable the send button
+            messageSubmit.style.backgroundColor = "skyblue";
+        }
+    });
+    const chatLog = document.querySelector("#chat-log");
+    chatLog.scrollTop = chatLog.scrollHeight;
+    window.addEventListener("load", clearCSRFParam);
+
+</script> -->
