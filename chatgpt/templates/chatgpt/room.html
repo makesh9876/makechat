@@ -49,19 +49,21 @@
         }
 
         .message-receiver {
+            font-family: 'Helvetica', Arial, sans-serif;
             text-align: left;
-            background-color: #f1f0f0;
+            background-color: #f0f0f0;
             padding: 8px;
-            border-radius: 15px;
+            border-radius: 10px;
             margin-bottom: 10px;
             display: block;
         }
 
         .message-sender {
+            font-family: 'Helvetica', Arial, sans-serif;
             text-align: right;
-            background-color: #dcf8c6;
+            background-color: #007bff;
             padding: 8px;
-            border-radius: 8px;
+            border-radius: 10px;
             margin-bottom: 10px;
             display: block;
         }
@@ -100,6 +102,35 @@
         #chat-message-submit:hover {
             background-color: black;
         }
+        @media screen and (max-width: 480px) {
+    #chat-input-container {
+        flex-direction: column; /* Stack input and button vertically on small screens */
+        align-items: stretch; /* Stretch input and button to full width */
+    }
+
+    #chat-message-input {
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    #chat-message-submit {
+        margin-left: 0;
+        margin-top: 10px;
+        width: 100%; /* Make the button full width */
+        background-color: skyblue;
+        color: #ffffff;
+        border: none;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background-color 0.5s;
+    }
+    #chat-message-submit:hover {
+            background-color: black;
+        }
+}
     </style>
 </head>
 
@@ -107,7 +138,7 @@
     <div id="chat-container" class="parent">
         <div id="chat-header">
             <h2
-                style="text-align: center; font-size: 24px; color: #333; text-transform: uppercase; letter-spacing: 2px; padding: 10px; background-color: #f6f6f6; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px;">
+                style="text-align: center; font-size: 14px; color: #333; text-transform: uppercase; letter-spacing: 2px; padding: 10px; background-color: #f6f6f6; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px;">
                 Talking to: {{ chat_with }}
             </h2>
         </div>
@@ -131,10 +162,10 @@
             {% endfor %}
         </div>
 
-        <div id="chat-input-container" class="form">
+        <div id="chat-input-container">
             <form action="" id="message" method="POST">
                 {% csrf_token %}
-                <input id="chat-message-input" type="text" placeholder="Type a message" />
+                <input id="chat-message-input" type="text" placeholder="Type a message" required/>
                 <input class="submit" id="chat-message-submit" type="submit" value="Send" />
             </form>
         </div>

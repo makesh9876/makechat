@@ -66,6 +66,13 @@ body {
               >Home<span class="sr-only">(current)</span></a
             >
           </li>
+          {% if not user.is_authenticated %}
+          <li class="nav-item active">
+            <a class="nav-link" href="{% url 'login' %}"
+              >Login<span class="sr-only">(current)</span></a
+            >
+          </li>
+          {% endif %}
           <li class="nav-item active">
             <a class="nav-link" href="{% url 'invite_user' %}"
               >Invite User<span class="sr-only">(current)</span></a
@@ -94,6 +101,11 @@ body {
           <li class="nav-item active">
             <a class="nav-link" href="{% url 'privacy_policy' %}"
               >Privacy policy<span class="sr-only">(current)</span></a
+            >
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="{% url 'logout' %}"
+              >Logout<span class="sr-only">(current)</span></a
             >
           </li>
         </ul>
