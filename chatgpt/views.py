@@ -26,6 +26,7 @@ from .models import Customer, UserMessage, InvitedUsers, ChatMessage, ChatThread
 from .lib.chatgpt import ChatGpt
 from .lib.payments import PaymentLinks
 from .lib.twillio import OutgoingMessage
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 TEXT_CHAT_LIMIT_FOR_FREE = 20
 IMAGE_CHAT_LIMIT_FOR_FREE = 2
@@ -189,7 +190,7 @@ class ShowResult(View):
                 redirect("education")
         return render(request, "chatgpt/show_result.html")
 
-
+@login_required
 def submit_quiz_view(request):
     """
     submit the quize
@@ -210,7 +211,7 @@ def get_gpt_response(prompt: str):
     return ChatGpt().completions(promt=prompt)
 
 
-class Education(View):
+class Education(LoginRequiredMixin, View):
     """
     This class handle the education geneate
     """
@@ -219,7 +220,7 @@ class Education(View):
         """
         this function generate a promt for gpt
         """
-        first = "i want you to act as a teacher with skills in all education, and reply with 10 questions with 4 options of each question, your reply should be in json format, do not reply anything other than json.The json format is below,"
+        first = "i want you to act as a teacher with skills in all education, and reply with 5 questions with 4 options of each question, your reply should be in json format, do not reply anything other than json.The json format is below,"
         format_res = {
             "prompt": "my_prompt",
             "questions": [
@@ -242,16 +243,23 @@ class Education(View):
         """
         render the quote generator
         """
-        return render(request, "chatgpt/image_generate.html")
+        return render(request, "chatgpt/quize_generate.html")
 
     def post(self, request):
         """
         generate a instagram quote
         """
+        can_proceed = DataRetriver().has_available_quota(
+            user=request.user, need_quota=2
+        )
+        if not can_proceed:
+            return HttpResponse(
+                "Please upgrade your plan, if you feel that this message is wrong, please contact admin"
+            )
         try:
             category = request.POST["category"]
             if not category:
-                return render(request, "chatgpt/image_generate.html")
+                return render(request, "chatgpt/quize_generate.html")
             prompt = self.get_prompt(
                 category=category,
             )
@@ -262,6 +270,7 @@ class Education(View):
                 "result_type": "quote",
                 "try_url_name": "quote_generate",
             }
+            DataRetriver().reduce_quota(user=request.user, reduce_count=2)
             return render(request, "chatgpt/questions.html", context)
         except Exception as error:
             print("Error -> ", error)
@@ -300,7 +309,7 @@ class ProdiaImageGenerate(View):
         return render(request, "chatgpt/generate_results.html", context)
 
 
-class QuoteGenerate(View):
+class QuoteGenerate(LoginRequiredMixin, View):
     """
     This class handle the quote geneate
     """
@@ -325,6 +334,13 @@ class QuoteGenerate(View):
         """
         generate a instagram quote
         """
+        can_proceed = DataRetriver().has_available_quota(
+            user=request.user, need_quota=1
+        )
+        if not can_proceed:
+            return HttpResponse(
+                "Please upgrade your plan, if you feel that this message is wrong, please contact admin"
+            )
         category = request.POST["category"]
         quantity = request.POST["quantity"]
         if not category:
@@ -338,10 +354,11 @@ class QuoteGenerate(View):
             "result_type": "quote",
             "try_url_name": "quote_generate",
         }
+        DataRetriver().reduce_quota(user=request.user, reduce_count=1)
         return render(request, "chatgpt/generate_results.html", context)
 
 
-class HastagsGenerate(View):
+class HastagsGenerate(LoginRequiredMixin, View):
     """
     This class handle the hastags geneate
     """
@@ -366,6 +383,13 @@ class HastagsGenerate(View):
         """
         generate a instagram quote
         """
+        can_proceed = DataRetriver().has_available_quota(
+            user=request.user, need_quota=1
+        )
+        if not can_proceed:
+            return HttpResponse(
+                "Please upgrade your plan, if you feel that this message is wrong, please contact admin"
+            )
         category = request.POST["category"]
         quantity = request.POST["quantity"]
         if not category:
@@ -379,6 +403,7 @@ class HastagsGenerate(View):
             "result_type": "hastag",
             "try_url_name": "hastag_generate",
         }
+        DataRetriver().reduce_quota(user=request.user, reduce_count=1)
         return render(request, "chatgpt/generate_results.html", context)
 
 
@@ -438,13 +463,20 @@ class DataRetriver:
             if create_new_if_not_exists:
                 return self.create_new_user(user_name=user_name)
             return None
+        
+    def create_customer(self, user):
+        """
+            This function create customer
+        """
+        customer = Customer.objects.create(user=user, plan="Free")
+        return customer
 
     def create_new_user(self, user_name: dict):
         """
         This function create new user
         """
         user = User.objects.create_user(username=user_name, password="Speed#123")
-        customer = Customer.objects.create(user=user, plan="Free")
+        customer = self.create_customer(user=user)
         print("=====new user created=>", user)
         return user, customer
 
@@ -462,6 +494,36 @@ class DataRetriver:
             user=user, content=content, role=role, message_type=message_type
         )
         return message
+    
+    def reduce_quota(self, user=None, user_name : str = "", reduce_count=1):
+        """
+            This function will reduce the usage
+        """
+        if user is None:
+            user = self.get_user(user_name=user_name)
+
+        customer_obj = customer = Customer.objects.get(user=user)
+        if customer_obj is None:
+            return None
+        customer_obj.usage_quota = customer_obj.usage_quota - reduce_count
+        customer_obj.save()
+        return user, customer_obj
+    
+    def has_available_quota(self, user=None, user_name="", need_quota=1):
+        """
+            This function will check does the user has quota
+        """
+        if user is None:
+            user = self.get_user(user_name=user_name)
+
+        customer_obj = customer = Customer.objects.get(user=user)
+        if customer_obj is None:
+            return None
+        avail_quota = customer_obj.usage_quota
+        if avail_quota >= need_quota:
+            return True
+        return False
+
 
 
 def makechat_body(response_message: str, user_number: str):
@@ -791,7 +853,7 @@ class Onboard(View):
         user_name = request.GET.get("phone_number")
         existing_user = DataRetriver().get_user(user_name=user_name)
         if existing_user:
-            return render(request, "chatgpt/login.html")
+            return redirect("login")
         return render(request, "chatgpt/onboard.html", {"user_name": user_name})
 
 
@@ -835,6 +897,7 @@ def register_view(request):
         user.save()
         # Log the user in and redirect them to the home page
         user = authenticate(request, username=username, password=password)
+        create_customer = DataRetriver().create_customer(user=user)
         if user is not None:
             login(request, user)
             messages.success(

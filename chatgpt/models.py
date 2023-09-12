@@ -5,7 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 # Create your models here.
-IMAGE_CHAT_LIMIT_FOR_FREE=3
+USAGE_LIMIT_FOR_FREE=20
 
 class Customer(models.Model):
     """
@@ -19,7 +19,7 @@ class Customer(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES)
-    image_quota = models.IntegerField(default=IMAGE_CHAT_LIMIT_FOR_FREE)
+    usage_quota = models.IntegerField(default=USAGE_LIMIT_FOR_FREE)
     plan_expires_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self) -> str:
