@@ -7,12 +7,13 @@ from .views import (
     login_request, home,Onboard,chat, chatting,landing_page,
     plan_upgrade, plan_details, checkout,submit_quiz_view,ShowResult,
     terms_and_conditions, privacy_policy, get_started, ImageGenerate, PaymentRedirect,
-    QuoteGenerate, HastagsGenerate,ProdiaImageGenerate, Education
+    QuoteGenerate, HastagsGenerate,ProdiaImageGenerate, Education, profile_page
 )
 
 urlpatterns = [
     path('get_started/', Education.as_view(), name='get_started'),
     path('home/', home, name='home'),
+    path('profile/', profile_page, name='profile_page'),
     path('', landing_page, name='landing_page'),
     path('<str:room_name>/<str:username>/<str:chat_with>/', chatting, name='chat_room'),
     path('incomming_message/', IncommingMessage.as_view(), name="incomming_message"),

@@ -1,0 +1,158 @@
+{% extends 'chatgpt/index.html' %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Makechat AI</title>
+  <style>
+    .welcome-text {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: gray;
+      text-align: center;
+    }
+
+    .login-message {
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .card {
+      background-color: #f8f8f8;
+      border-radius: 10px;
+      box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+      background-color: #f2f2f2;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 10px;
+      border-radius: 10px 10px 0 0;
+      text-align: center;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .form-group label {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .form-control {
+      border-radius: 5px;
+    }
+
+    .btn-primary {
+      background-color: black;
+      border-color: #4CAF50;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .btn-primary:hover {
+      background-color: #45a049;
+      border-color: #45a049;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+
+    .form-group {
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: inline-block;
+      width: 120px;
+      text-align: left;
+      color: #666;
+      font-size: 16px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      height: 40px;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #f2f2f2;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      background-color: #fff;
+      box-shadow: 0 0 5px #007bff;
+    }
+
+    button[type="submit"] {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #0062cc;
+    }
+
+    p {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #666;
+    }
+
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Profile</div>
+          <div class="card-body">
+              <div class="form-group">
+                <label for="emailOrPhone">User name</label>
+                <input type="text" id="emailOrPhone" name="emailOrPhone" placeholder="" pattern="[0-9]*" inputmode="numeric"
+                  minlength="10" maxlength="10" value="{{user.username}}" required readonly>
+              </div>
+              <div class="form-group">
+                <label for="emailOrPhone">AI points</label>
+                <input type="number" id="password" placeholder="" name="password" minlength="6" value="{{customer.usage_quota}}" readonly>
+              </div>
+              <a class="nav-link" href="{% url 'logout' %}"
+              >Logout<span class="sr-only">(current)</span></a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
+{% endblock content %}

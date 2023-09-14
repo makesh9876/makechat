@@ -1047,3 +1047,17 @@ def landing_page(request):
     return render(
             request, "chatgpt/landing.html"
         )
+
+def profile_page(request):
+    """
+        This is landing page
+    """
+    user, customer = DataRetriver().get_user_by_user_name(
+        user_name=request.user.username, create_new_if_not_exists=False
+    )
+    context = {
+        "customer" :customer
+    }
+    return render(
+            request, "chatgpt/profile.html", context
+        )
