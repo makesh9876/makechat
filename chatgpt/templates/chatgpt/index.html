@@ -42,12 +42,17 @@ body {
         max-height: calc(100vh - 200px); /* Adjust the value to leave space for the footer */
         overflow-y: auto; /* Enable vertical scrolling if necessary */
       }
+      .nav-item {
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+        }
     </style>
   </head>
 
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <a class="navbar-brand" href="{% url 'home' %}">Makechat</a>
+      <a class="navbar-brand" href="{% url 'landing_page' %}">Makechat</a>
       <button
         class="navbar-toggler"
         type="button"
@@ -62,7 +67,7 @@ body {
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav mr-auto">
           <li class="nav-item active">
-            <a class="nav-link" href="{% url 'home' %}"
+            <a class="nav-link" href="{% url 'landing_page' %}"
               >Home<span class="sr-only">(current)</span></a
             >
           </li>
@@ -74,8 +79,8 @@ body {
           </li>
           {% endif %}
           <li class="nav-item active">
-            <a class="nav-link" href="{% url 'invite_user' %}"
-              >Invite<span class="sr-only">(current)</span></a
+            <a class="nav-link" href="{% url 'home' %}"
+              >Invites<span class="sr-only">(current)</span></a
             >
           </li>
           <li class="nav-item active">

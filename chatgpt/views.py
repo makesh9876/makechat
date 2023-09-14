@@ -1038,3 +1038,12 @@ def chat(request):
         thread_id = str(person_obj.id) + "_" + str(request.user.id)
         chat_with = "unknown"
     return redirect("chat_room", room_name=thread_id, username=request.user.username,chat_with=chat_with)
+
+
+def landing_page(request):
+    """
+        This is landing page
+    """
+    return render(
+            request, "chatgpt/landing.html"
+        )

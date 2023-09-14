@@ -4,7 +4,7 @@
 from django.urls import path
 from .views import (
     IncommingMessage, MakeChat, register_view, logout,
-    login_request, home,Onboard,chat, chatting,
+    login_request, home,Onboard,chat, chatting,landing_page,
     plan_upgrade, plan_details, checkout,submit_quiz_view,ShowResult,
     terms_and_conditions, privacy_policy, get_started, ImageGenerate, PaymentRedirect,
     QuoteGenerate, HastagsGenerate,ProdiaImageGenerate, Education
@@ -12,7 +12,8 @@ from .views import (
 
 urlpatterns = [
     path('get_started/', Education.as_view(), name='get_started'),
-    path('', home, name='home'),
+    path('home/', home, name='home'),
+    path('', landing_page, name='landing_page'),
     path('<str:room_name>/<str:username>/<str:chat_with>/', chatting, name='chat_room'),
     path('incomming_message/', IncommingMessage.as_view(), name="incomming_message"),
     path('image_generate/', ImageGenerate.as_view(), name="image_generate"),
