@@ -30,7 +30,7 @@
         }
 
         .card-header {
-            background-color: blueviolet;
+            background-color: silver;
             color: #fff;
             font-size: 24px;
             font-weight: bold;
@@ -38,10 +38,16 @@
             border-radius: 10px 10px 0 0;
             text-align: center;
         }
-
-        .card-body {
+        .i-card-header {
+            background-color: blueviolet;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
             padding: 20px;
+            border-radius: 10px 10px 0 0;
+            text-align: center;
         }
+
 
         h2 {
             font-size: 28px;
@@ -53,19 +59,28 @@
             color: #555;
         }
 
-        .btn-primary {
-            background-color: black;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            padding: 10px 20px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
+        .card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.btn-primary {
+    background-color: blueviolet;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 20px; /* Add margin to separate the button from content */
+}
 
         .btn-primary:hover {
-            background-color: #45a049;
+            background-color: black;
         }
 
         .btn-primary:disabled {
@@ -99,7 +114,7 @@
                     <div class="card-header">Makechat AI</div>
                     <div class="card-body">
                         <div class="card">
-                            <div class="card-header">AI Quiz Generator</div>
+                            <div class="i-card-header">AI Quiz Generator</div>
                             <div class="card-body">
                                 <h4>Unlock the Power of AI-Driven Quizzes</h4>
                                 <p>Elevate your content engagement with our AI Quiz Generator. Say goodbye to dull,
@@ -110,7 +125,7 @@
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-header">AI Hashtag Generator</div>
+                            <div class="i-card-header">AI Hashtag Generator</div>
                             <div class="card-body">
                                 <h4>Supercharge Your Social Media Reach</h4>
                                 <p>Struggling to find the right hashtags for your social media posts? Look no further!
@@ -121,7 +136,7 @@
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-header">AI Quotes Generator</div>
+                            <div class="i-card-header">AI Quotes Generator</div>
                             <div class="card-body">
                                 <h4>Inspire and Engage with Ease</h4>
                                 <p>Inject inspiration into your content effortlessly with our Quotes Generator. Whether
