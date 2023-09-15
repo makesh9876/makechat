@@ -190,6 +190,7 @@ class ShowResult(View):
                 redirect("education")
         return render(request, "chatgpt/show_result.html")
 
+
 @login_required
 def submit_quiz_view(request):
     """
@@ -421,9 +422,9 @@ class DataRetriver:
         )
         plan_data = path_or({}, [plan_id], PLAN_DETAILS)
         customer_obj.plan = "Standard"
-        current_image_quota = customer_obj.image_quota
+        current_image_quota = customer_obj.usage_quota
         new_image_quota = current_image_quota + path_or(0, ["image_quota"], plan_data)
-        customer_obj.image_quota = new_image_quota
+        customer_obj.usage_quota = new_image_quota
         expires_at = customer_obj.plan_expires_at
         now = timezone.now()
         print("Time now -->", now)
@@ -462,11 +463,11 @@ class DataRetriver:
             print("=====user does not exists ", user_name)
             if create_new_if_not_exists:
                 return self.create_new_user(user_name=user_name)
-            return None
-        
+            return None, None
+
     def create_customer(self, user):
         """
-            This function create customer
+        This function create customer
         """
         customer = Customer.objects.create(user=user, plan="Free")
         return customer
@@ -494,10 +495,10 @@ class DataRetriver:
             user=user, content=content, role=role, message_type=message_type
         )
         return message
-    
-    def reduce_quota(self, user=None, user_name : str = "", reduce_count=1):
+
+    def reduce_quota(self, user=None, user_name: str = "", reduce_count=1):
         """
-            This function will reduce the usage
+        This function will reduce the usage
         """
         if user is None:
             user = self.get_user(user_name=user_name)
@@ -508,10 +509,10 @@ class DataRetriver:
         customer_obj.usage_quota = customer_obj.usage_quota - reduce_count
         customer_obj.save()
         return user, customer_obj
-    
+
     def has_available_quota(self, user=None, user_name="", need_quota=1):
         """
-            This function will check does the user has quota
+        This function will check does the user has quota
         """
         if user is None:
             user = self.get_user(user_name=user_name)
@@ -523,7 +524,6 @@ class DataRetriver:
         if avail_quota >= need_quota:
             return True
         return False
-
 
 
 def makechat_body(response_message: str, user_number: str):
@@ -565,85 +565,16 @@ class IncommingMessage(APIView):
     Handle the incomming message from users
     """
 
-    def send_limit_exceeded_on_free_plan(self, user_obj):
-        """
-        send limit exceeded msg on free plan
-        """
-        OutgoingMessage().send(
-            user_number=str(user_obj.username),
-            response_message="Oops! It seems that you have reached the limit of our free plan for the past 24 hours, with a total of "
-            + str(TEXT_CHAT_LIMIT_FOR_FREE)
-            + " text message or "
-            + str(IMAGE_CHAT_LIMIT_FOR_FREE)
-            + " image request"
-            + " messages used during this period.\n"
-            + "However, you can still continue using our free plan and enjoy limited chatting. Please note that the limit is based on a 24-hour timeframe, and after this period, your message count will reset.\n",
-        )
-
-        return True
-
-    #             + "If you wish to have unlimited chatting without interruptions, you can consider upgrading to our affordable plan for just 5 Rs.\n"
-    # + "Upgrading is entirely optional, and you can choose to do so at any time. Stay connected and keep enjoying the conversation!\n"
-    #             + "Cost of the plan: 5 Rs\n"
-    #             + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details"
-    #         )
-
-    def plan_expired_on_standard_plan(self, user_obj):
-        """
-        This function will send the message to subscribe
-        """
-        OutgoingMessage().send(
-            user_number=str(user_obj.username),
-            response_message="Oops! It seems your plan expired, Subscribe now!\nCost of plan : 5rs\n"
-            + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details",
-        )
-        return True
-
-    def plan_expired_for_image_quota(self, user_obj):
+    def plan_quota_expired(self, user_obj):
         """
         THis function will send message for
         plan expired or image qota expired
         """
         OutgoingMessage().send(
             user_number=str(user_obj.username),
-            response_message="Oops! It seems your plan expired or image quota reached limit, Subscribe now!\nCost of plan : 5rs\n"
-            + "Learn more about the plan details at:\nhttps://makechat.pythonanywhere.com/plan-details",
+            response_message="Oops! It looks like we've reached our usage limit.\nWe're currently in beta testing mode and don't have a paid plan available just yet. But don't worry, we're working hard to improve our services!\nIf you have any questions or need more information, please feel free to reach out to our friendly admin team at techveins01@gmail.com. They'll be happy to assist you.\nThank you for your understanding and support as we continue to develop and refine our service. We appreciate your patience!",
         )
         return True
-
-    def is_text_message_expired(self, data: dict, len_of_messages: int):
-        """
-        This function will check does this user is expired
-        """
-        plan_expires = data["customer"].plan_expires_at
-        is_expired = timezone.now() > plan_expires
-        plan = data["customer"].plan
-        if plan == "Free" and len_of_messages > TEXT_CHAT_LIMIT_FOR_FREE:
-            return self.send_limit_exceeded_on_free_plan(user_obj=data["user"])
-
-        if (
-            plan == "Standard"
-            and is_expired
-            and len_of_messages > TEXT_CHAT_LIMIT_FOR_FREE
-        ):
-            return self.plan_expired_on_standard_plan(user_obj=data["user"])
-        return False
-
-    def is_image_message_expired(self, data: dict, len_of_messages: int):
-        """
-        This function will check does this user is expired
-        """
-        plan_expires = data["customer"].plan_expires_at
-        is_expired = timezone.now() > plan_expires
-        plan = data["customer"].plan
-        image_quota = data["customer"].image_quota
-        customer_obj = data["customer"]
-        if plan == "Free" and customer_obj.image_quota == 0:
-            return self.send_limit_exceeded_on_free_plan(user_obj=data["user"])
-
-        if plan == "Standard" and is_expired or image_quota == 0:
-            return self.plan_expired_for_image_quota(user_obj=data["user"])
-        return False
 
     def get_request_type(self, message_body: str):
         """
@@ -671,37 +602,20 @@ class IncommingMessage(APIView):
                 res.append(message)
         return res
 
-    def filter_message_by_hrs(self, messages: list, hrs: int = 24):
-        """
-        This function will filter the messages by hrs
-        """
-        res = []
-        now_time = timezone.now()
-        for message in messages:
-            time_difference = now_time - message.created_at
-            if time_difference <= timedelta(hours=hrs):
-                res.append(message)
-        return res
-
     def reply_text_message(self, data):
         """
         reply for text message
         """
+        user_obj = data["user"]
         DataRetriver().create_message(
-            user=data["user"], content=data["content"], role="user"
+            user=user_obj, content=data["content"], role="user"
         )
         old_messages = self.filter_message_by_request_type(
-            request_type="text", messages=self.get_old_messages(user_obj=data["user"])
+            request_type="text", messages=self.get_old_messages(user_obj=user_obj)
         )
-        messages_within_time_frame = self.filter_message_by_hrs(
-            messages=old_messages, hrs=24
-        )
-        print("-------------", messages_within_time_frame)
-        if self.is_text_message_expired(
-            data=data, len_of_messages=len(messages_within_time_frame)
-        ):
-            print("========plan expired====")
-            return {}
+        has_quota = DataRetriver().has_available_quota(user=user_obj, need_quota=4)
+        if not has_quota:
+            return self.plan_quota_expired(user_obj=user_obj)
         print("conversing with chatgpt====")
         response = ChatGpt().chat(
             messages=ChatGpt().form_conversations(user_messages=old_messages[0:10]),
@@ -709,6 +623,8 @@ class IncommingMessage(APIView):
         DataRetriver().create_message(
             user=data["user"], content=response, role="system"
         )
+        customer_obj = data["customer"]
+        customer_obj.usage_quota = customer_obj.usage_quota - 1
         send_message = OutgoingMessage().send(
             user_number=str(data["user"].username), response_message=response
         )
@@ -718,27 +634,13 @@ class IncommingMessage(APIView):
         """
         reply with image
         """
-        DataRetriver().create_message(
-            user=data["user"],
-            content=data["content"],
-            role="user",
-            message_type="image",
-        )
-        old_messages = self.filter_message_by_request_type(
-            request_type="image", messages=self.get_old_messages(user_obj=data["user"])
-        )
-        messages_within_time_frame = self.filter_message_by_hrs(
-            messages=old_messages, hrs=24
-        )
-        print("-------------", messages_within_time_frame)
-        if self.is_image_message_expired(
-            data=data, len_of_messages=len(messages_within_time_frame)
-        ):
-            print("========plan expired====")
-            return {}
+        user_obj = data["user"]
+        has_quota = DataRetriver().has_available_quota(user=user_obj, need_quota=4)
+        if not has_quota:
+            return self.plan_quota_expired(user_obj=user_obj)
         response = (ChatGpt().generate_image(image_prompt=data["content"]),)
         customer_obj = data["customer"]
-        customer_obj.image_quota = customer_obj.image_quota - 1
+        customer_obj.usage_quota = customer_obj.usage_quota - 4
         customer_obj.save()
         send_message = OutgoingMessage().send(
             user_number=str(data["user"].username),
@@ -746,6 +648,17 @@ class IncommingMessage(APIView):
             mediaurl=response,
         )
         return send_message
+
+    def ask_to_register(self, username):
+        """
+        send register link
+        """
+        OutgoingMessage().send(
+            user_number=str(username),
+            response_message="Oops! It seems you have not regitered with us, Don't worry it is simple and FREE\n"
+            + "Click the link to register:\nhttps://makechat.pythonanywhere.com/register/",
+        )
+        return Response({"status": status.HTTP_200_OK})
 
     def post(self, request):
         """
@@ -761,8 +674,10 @@ class IncommingMessage(APIView):
             return Response({"status": status.HTTP_200_OK})
         data_retriver = DataRetriver()
         user_obj, customer_obj = data_retriver.get_user_by_user_name(
-            user_name=user_name, create_new_if_not_exists=True
+            user_name=user_name, create_new_if_not_exists=False
         )
+        if user_obj is None:
+            return self.ask_to_register(username=user_name)
         customer_plan = customer_obj.plan
         request_type = self.get_request_type(message_body=content)
         data = {
@@ -969,9 +884,10 @@ def home(request):
         {"invited_by_you": invited_by_you, "invited_by_others": invited_by_others},
     )
 
+
 def save_message_to_database(message_val, sender, room_name):
     """
-        chat message save to db
+    chat message save to db
     """
     thread_id = room_name
     chat_thread = ChatThread.objects.filter(thread_id=thread_id).first()
@@ -982,6 +898,7 @@ def save_message_to_database(message_val, sender, room_name):
     )
     chat_message.save()
 
+
 def chatting(request, room_name, username, chat_with):
     """
     chatting
@@ -989,11 +906,9 @@ def chatting(request, room_name, username, chat_with):
     if request.method == "POST":
         print(request.body)
         save_message_to_database(
-            message_val = request.POST['message'],
-            sender=username,
-            room_name=room_name
+            message_val=request.POST["message"], sender=username, room_name=room_name
         )
-        #return HttpResponse("mESSSAGE DONE")
+        # return HttpResponse("mESSSAGE DONE")
     if request.user.username != username:
         return HttpResponse("User name not matching")
     try:
@@ -1006,10 +921,8 @@ def chatting(request, room_name, username, chat_with):
             .order_by("-created_at")
             .reverse()
         )
-        context = {"messages": messages_list, "chat_with" : chat_with}
-        return render(
-            request, "chatgpt/room.html", context
-        )
+        context = {"messages": messages_list, "chat_with": chat_with}
+        return render(request, "chatgpt/room.html", context)
     except ChatThread.DoesNotExist:
         return HttpResponse("User is not onboarded yet")
 
@@ -1037,27 +950,27 @@ def chat(request):
             )
         thread_id = str(person_obj.id) + "_" + str(request.user.id)
         chat_with = "unknown"
-    return redirect("chat_room", room_name=thread_id, username=request.user.username,chat_with=chat_with)
+    return redirect(
+        "chat_room",
+        room_name=thread_id,
+        username=request.user.username,
+        chat_with=chat_with,
+    )
 
 
 def landing_page(request):
     """
-        This is landing page
+    This is landing page
     """
-    return render(
-            request, "chatgpt/landing.html"
-        )
+    return render(request, "chatgpt/landing.html")
+
 
 def profile_page(request):
     """
-        This is landing page
+    This is landing page
     """
     user, customer = DataRetriver().get_user_by_user_name(
         user_name=request.user.username, create_new_if_not_exists=False
     )
-    context = {
-        "customer" :customer
-    }
-    return render(
-            request, "chatgpt/profile.html", context
-        )
+    context = {"customer": customer}
+    return render(request, "chatgpt/profile.html", context)

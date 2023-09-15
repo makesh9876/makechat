@@ -121,12 +121,39 @@
   <a class="nav-link" href="{% url 'makechat' %}"><button id="new-invite" class="tablinks">Invite New User</button></a>
 </div>
 <div class="tab">
-
-  <button id="invited-by-you-tab" class="tablinks" onclick="openTab(event, 'invited-by-you')">Invited by you</button>
   <button class="tablinks" onclick="openTab(event, 'invited-by-others')">Invited by others</button>
+  <button id="invited-by-you-tab" class="tablinks" onclick="openTab(event, 'invited-by-you')">Invited by you</button>
+  
 </div>
 
 <div class="container">
+  <div id="invited-by-others" class="tabcontent">
+    <div class="section">
+      {% if invited_by_others %}
+      <ul class="user-list">
+        {% for user in invited_by_others %}
+        <li>
+          <div class="user-info">
+            <div class="user-details">
+              <span class="user-name">Unknown</span>
+            </div>
+            <form id="chat-form" method="get" action="{% url 'chatting' %}" style="display: inline;">
+              {% csrf_token %}
+              <input type="hidden" name="invite_id" value="{{ user.id }}">
+              <button type="submit" class="chat-button">Chat</button>
+            </form>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% elif user.is_authenticated %}
+      <p>No users invited you.</p>
+      {% else %}
+
+      <p>Login to see the invites.<a class="nav-link" href="{% url 'login' %}">Login</a></p>
+      {% endif %}
+    </div>
+  </div>
   <div id="invited-by-you" class="tabcontent">
     <div class="section">
       {% if invited_by_you %}
@@ -152,33 +179,6 @@
       {% else %}
 
       <p>Login to see the invited users.<a class="nav-link" href="{% url 'login' %}">Login</a></p>
-      {% endif %}
-    </div>
-  </div>
-  <div id="invited-by-others" class="tabcontent">
-    <div class="section">
-      {% if invited_by_others %}
-      <ul class="user-list">
-        {% for user in invited_by_others %}
-        <li>
-          <div class="user-info">
-            <div class="user-details">
-              <span class="user-name">Unknown</span>
-            </div>
-            <form id="chat-form" method="get" action="{% url 'chatting' %}" style="display: inline;">
-              {% csrf_token %}
-              <input type="hidden" name="invite_id" value="{{ user.id }}">
-              <button type="submit" class="chat-button">Chat</button>
-            </form>
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-      {% elif user.is_authenticated %}
-      <p>No users invited you.</p>
-      {% else %}
-
-      <p>Login to see the invites.<a class="nav-link" href="{% url 'login' %}">Login</a></p>
       {% endif %}
     </div>
   </div>
