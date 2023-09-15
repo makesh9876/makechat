@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure--fpyuz#8h!ub8m_%wnoe*r8rx$2ncpb@k1fr^+_yz^+qgh($%g'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['makechat.pythonanywhere.com']
 
