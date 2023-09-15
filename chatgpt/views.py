@@ -656,8 +656,8 @@ class IncommingMessage(APIView):
         """
         OutgoingMessage().send(
             user_number=str(username),
-            response_message="Oops! It seems you have not regitered with us, Don't worry it is simple and FREE\n"
-            + "Click the link to register:\nhttps://makechat.pythonanywhere.com/register/",
+            response_message="Oops! It looks like you haven't registered with us yet, but don't worry, it's quick and completely FREE!\n"
+            + "To get started, just click on the following link to register:\nhttps://makechat.pythonanywhere.com/register/",
         )
         return Response({"status": status.HTTP_200_OK})
 
