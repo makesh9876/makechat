@@ -625,6 +625,7 @@ class IncommingMessage(APIView):
         )
         customer_obj = data["customer"]
         customer_obj.usage_quota = customer_obj.usage_quota - 1
+        customer_obj.save()
         send_message = OutgoingMessage().send(
             user_number=str(data["user"].username), response_message=response
         )
