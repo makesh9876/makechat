@@ -572,7 +572,7 @@ class IncommingMessage(APIView):
         """
         OutgoingMessage().send(
             user_number=str(user_obj.username),
-            response_message="Oops! It looks like we've reached our usage limit.\nWe're currently in beta testing mode and don't have a paid plan available just yet. But don't worry, we're working hard to improve our services!\nIf you have any questions or need more information, please feel free to reach out to our friendly admin team at techveins01@gmail.com. They'll be happy to assist you.\nThank you for your understanding and support as we continue to develop and refine our service. We appreciate your patience!",
+            response_message="Oops! It looks like we've reached our usage limit.\n\nWe're currently in beta testing mode and don't have a paid plan available just yet. But don't worry, we're working hard to improve our services!\n\nIf you have any questions or need more information, please feel free to reach out to our friendly admin team at techveins01@gmail.com.\n\n They'll be happy to assist you.\nThank you for your understanding and support as we continue to develop and refine our service. We appreciate your patience!",
         )
         return True
 
@@ -613,7 +613,7 @@ class IncommingMessage(APIView):
         old_messages = self.filter_message_by_request_type(
             request_type="text", messages=self.get_old_messages(user_obj=user_obj)
         )
-        has_quota = DataRetriver().has_available_quota(user=user_obj, need_quota=4)
+        has_quota = DataRetriver().has_available_quota(user=user_obj, need_quota=1)
         if not has_quota:
             return self.plan_quota_expired(user_obj=user_obj)
         print("conversing with chatgpt====")
