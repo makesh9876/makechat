@@ -531,14 +531,14 @@ def makechat_body(response_message: str, user_number: str):
     This function will return the makechat app body
     """
     return (
-        "Hey Buddy,\n\nYou have been invited to Makechat! Someone has sent you an invitation. \nHere's the message they sent:\n"
-        + "============================"
+        "Hey Buddy,\n\nYou have been invited to Makechat! Someone has sent you an invitation. \n\nHere's the message they sent:\n"
+        + "============================\n"
         + response_message
-        + "============================"
-        + "\n\nJoin makechat by clicking on the link below:\n"
+        + "\n============================\n"
+        + "\nJoin makechat by clicking on the link below:\n"
         + "https://makechat.pythonanywhere.com/onboard?phone_number="
         + user_number
-        + "\nFeel free to accept the invitation and start makechat. \nRemember, the person who invited you will remain anonymous.\nHappy makechat!\nThe Makechat Team"
+        + "\n\nFeel free to accept the invitation and start makechat. \nRemember, the person who invited you will remain anonymous.\n\nHappy makechat!\nThe Makechat Team"
     )
 
 
