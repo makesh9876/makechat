@@ -531,7 +531,7 @@ def makechat_body(response_message: str, user_number: str):
     This function will return the makechat app body
     """
     return (
-        "Hey Buddy,\n\nYou have been invited to Makechat! Someone has sent you an anonymous invitation. \nHere's the message they sent:\n\n"
+        "Hey Buddy,\n\nYou have been invited to Makechat! Someone has sent you an invitation. \nHere's the message they sent:\n\n"
         + "============================\n\n"
         + response_message
         + "\n\n"
