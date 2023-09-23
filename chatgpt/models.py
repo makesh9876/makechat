@@ -103,3 +103,19 @@ class FreeAiRequests(models.Model):
         # Increment the counter before saving
         self.requests_count += 1
         super(FreeAiRequests, self).save(*args, **kwargs)
+    
+
+class Quizes(models.Model):
+    """
+        quiz
+    """
+    VISIBILITY = (
+        ("Public", "Public"),
+        ("Private", "Private"),
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    topic = models.CharField(max_length=20)
+    quiz = models.JSONField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    metadata = models.JSONField()
+    visibility = models.CharField(max_length=20, choices=VISIBILITY)

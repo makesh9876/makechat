@@ -22,7 +22,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from rest_framework import status
 from rest_framework.response import Response
-from .models import Customer, UserMessage, InvitedUsers, ChatMessage, ChatThread
+from .models import Customer, UserMessage, InvitedUsers, ChatMessage, ChatThread, Quizes
 from .lib.chatgpt import ChatGpt
 from .lib.payments import PaymentLinks
 from .lib.twillio import OutgoingMessage
@@ -211,6 +211,54 @@ def get_gpt_response(prompt: str):
     """
     return ChatGpt().completions(promt=prompt)
 
+@login_required
+def quiz_start(request, quiz_id):
+    quiz_obj = Quizes.objects.get(id=quiz_id)
+    context = {
+                "category": quiz_obj.topic,
+                "response": quiz_obj.quiz,
+                "result_type": "quote",
+                "try_url_name": "quote_generate",
+            }
+    return render(request, "chatgpt/questions.html", context)
+
+class QuizHome(LoginRequiredMixin, View):
+    def filter_quiz(self, user_obj):
+        """
+            filter only my quiz
+        """
+        all_quiz = Quizes.objects.all()
+        other_quiz = []
+        my_quiz = []
+        for quiz in all_quiz:
+            if quiz.created_by == user_obj:
+                my_quiz.append(quiz)
+            else:
+                other_quiz.append(quiz)
+        return other_quiz, my_quiz
+    def get(self, request):
+        """
+            quiz home page
+        """
+        
+        all_quiz_filtered , my_quiz = self.filter_quiz(request.user)
+        context = {
+            "all_quiz" : all_quiz_filtered,
+            "my_quiz" : my_quiz
+        }
+        return render(request, "chatgpt/quiz_home.html", context)
+    
+    def post(self, request):
+        """
+            start quiz
+        """
+        quiz_id = request.POST.get("quiz_id")
+        return redirect(
+            quiz_start,
+            quiz_id=quiz_id
+
+        )
+
 
 class Education(LoginRequiredMixin, View):
     """
@@ -245,6 +293,19 @@ class Education(LoginRequiredMixin, View):
         render the quote generator
         """
         return render(request, "chatgpt/quize_generate.html")
+    
+    def save_quiz(self, data : dict, user_obj):
+        """
+            save quix in data base
+        """
+        return Quizes.objects.create(
+            created_by=user_obj,
+            visibility="Public",
+            metadata={},
+            quiz=path_or({},["response"], data),
+            topic=path_or({},["category"], data),
+        )
+
 
     def post(self, request):
         """
@@ -271,8 +332,12 @@ class Education(LoginRequiredMixin, View):
                 "result_type": "quote",
                 "try_url_name": "quote_generate",
             }
+            quiz_obj = self.save_quiz(data=context, user_obj=request.user)
             DataRetriver().reduce_quota(user=request.user, reduce_count=2)
-            return render(request, "chatgpt/questions.html", context)
+            return redirect(
+                quiz_start,
+                quiz_id = quiz_obj.id
+            )
         except Exception as error:
             print("Error -> ", error)
             return HttpResponse(
@@ -844,7 +909,10 @@ def login_request(request):
         user = auth.authenticate(username=username, password=password)
         if user is not None:
             auth.login(request, user)
-            return redirect("home")
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            return redirect("/")
         messages.info(
             request,
             "Oops! It seems like the credentials you provided are invalid. Please double-check and try again. We're here to help you get it right!",

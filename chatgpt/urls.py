@@ -7,7 +7,7 @@ from .views import (
     login_request, home,Onboard,chat, chatting,landing_page,
     plan_upgrade, plan_details, checkout,submit_quiz_view,ShowResult,
     terms_and_conditions, privacy_policy, get_started, ImageGenerate, PaymentRedirect,
-    QuoteGenerate, HastagsGenerate,ProdiaImageGenerate, Education, profile_page
+    QuoteGenerate, HastagsGenerate,ProdiaImageGenerate, Education, profile_page, QuizHome, quiz_start
 )
 
 urlpatterns = [
@@ -17,6 +17,8 @@ urlpatterns = [
     path('', landing_page, name='landing_page'),
     path('<str:room_name>/<str:username>/<str:chat_with>/', chatting, name='chat_room'),
     path('incomming_message/', IncommingMessage.as_view(), name="incomming_message"),
+    path('quiz_home/', QuizHome.as_view(), name="quiz_home"),
+    path('quiz/<str:quiz_id>/', quiz_start, name="quiz_start"),
     path('image_generate/', ImageGenerate.as_view(), name="image_generate"),
     path('makechat/',MakeChat.as_view(), name="makechat"),
     path('invite_user/',MakeChat.as_view(), name="invite_user"),
