@@ -733,6 +733,11 @@ class IncommingMessage(APIView):
             phone_number=str(user_name)
         )
 
+    def send_reset_congrats(self, user_name: str):
+        return OutgoingMessage().send_message_with_text(
+                message_text="Congratulations, your reset has been successfully completed! Feel free to continue using Makechat AI. 🎉🤖",
+                phone_number=str(user_name)
+            )
     def reset_quota(self, user_name : str):
         """
             resets the quota
@@ -745,7 +750,8 @@ class IncommingMessage(APIView):
         if not reset_quota_obj:
             return {}
         if force_reset:
-            return self.reset_now(customer_obj=customer, reset_quota_obj=reset_quota_obj)
+            self.reset_now(customer_obj=customer, reset_quota_obj=reset_quota_obj)
+            return self.send_reset_congrats(user_name=user_name)
         last_reseted_at = reset_quota_obj.last_reseted_at
         now_time = timezone.now()
 
@@ -754,10 +760,7 @@ class IncommingMessage(APIView):
         # Check if the time difference is 24 hours or more
         if time_difference > timedelta(hours=24):
             self.reset_now(customer_obj=customer, reset_quota_obj=reset_quota_obj)
-            return OutgoingMessage().send_message_with_text(
-                message_text="Congratulations, your reset has been successfully completed! Feel free to continue using Makechat AI. 🎉🤖",
-                phone_number=str(user_name)
-            )
+            return self.send_reset_congrats(user_name=user_name)
         return self.reset_limit_exceeded(user_name=user_name)
 
     def reply_image_message(self, data):
