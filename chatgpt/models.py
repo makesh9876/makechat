@@ -7,6 +7,15 @@ from django.utils import timezone
 # Create your models here.
 USAGE_LIMIT_FOR_FREE=20
 
+class QuotaReset(models.Model):
+    """
+        quota reset
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    last_reseted_at = models.DateTimeField(default=timezone.now)
+    metadata = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
 class Customer(models.Model):
     """
     hold the customer data

@@ -22,7 +22,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from rest_framework import status
 from rest_framework.response import Response
-from .models import Customer, UserMessage, InvitedUsers, ChatMessage, ChatThread, Quizes
+from .models import Customer, UserMessage, InvitedUsers, ChatMessage, ChatThread, Quizes, QuotaReset
 from .lib.chatgpt import ChatGpt
 from .lib.payments import PaymentLinks
 from .lib.twillio import OutgoingMessage
@@ -515,6 +515,24 @@ class DataRetriver:
         except User.DoesNotExist:
             print("=====user does not exists ", user_name)
             return None
+    
+    def get_quota_reset_by_user(self, user_obj, create_if_not_exists=False):
+        """
+            get user quota obj
+        """
+        try:
+            quota_reset = QuotaReset.objects.get(user=user_obj)
+            return quota_reset, False
+        except QuotaReset.DoesNotExist:
+            if create_if_not_exists:
+                return QuotaReset.objects.create(
+                    user=user_obj,
+                    last_reseted_at=timezone.now(),
+                    metadata={}
+                ), True
+            print("=====quota reset does not exists ", user_obj)
+            return None, None
+
 
     def get_user_by_user_name(self, user_name: str, create_new_if_not_exists=True):
         """
@@ -568,7 +586,7 @@ class DataRetriver:
         if user is None:
             user = self.get_user(user_name=user_name)
 
-        customer_obj = customer = Customer.objects.get(user=user)
+        customer_obj = Customer.objects.get(user=user)
         if customer_obj is None:
             return None
         customer_obj.usage_quota = customer_obj.usage_quota - reduce_count
@@ -582,7 +600,7 @@ class DataRetriver:
         if user is None:
             user = self.get_user(user_name=user_name)
 
-        customer_obj = customer = Customer.objects.get(user=user)
+        customer_obj = Customer.objects.get(user=user)
         if customer_obj is None:
             return None
         avail_quota = customer_obj.usage_quota
@@ -636,7 +654,7 @@ class IncommingMessage(APIView):
         """
         OutgoingMessage().send(
             user_number=str(user_obj.username),
-            response_message="Oops! It looks like we've reached our usage limit.\n\nWe're currently in beta testing mode and don't have a paid plan available just yet. But don't worry, we're working hard to improve our services!\n\nIf you have any questions or need more information, please feel free to reach out to our friendly admin team at techveins01@gmail.com.\n\n They'll be happy to assist you.\nThank you for your understanding and support as we continue to develop and refine our service. We appreciate your patience!",
+            response_message="Oops! It looks like we've reached our usage limit.\n\nTry resetting by replying with the text:\n\nreset24\n\nYour usage will be reset, and you can continue using Makechat AI.",
         )
         return True
 
@@ -694,6 +712,53 @@ class IncommingMessage(APIView):
             user_number=str(data["user"].username), response_message=response
         )
         return send_message
+    def reset_now(self, customer_obj, reset_quota_obj: QuotaReset):
+        """
+            RESET NOW
+        """
+        current_quota = customer_obj.usage_quota
+        new_quota = current_quota + 10
+        customer_obj.usage_quota = new_quota
+        customer_obj.save()
+        reset_quota_obj.last_reseted_at = timezone.now()
+        reset_quota_obj.save()
+        return {}
+    
+    def reset_limit_exceeded(self, user_name):
+        """
+            notify reset limit exceeded
+        """
+        return OutgoingMessage().send_message_with_text(
+            message_text="You won't be able to reset the quota within 24 hours. Please be patient and come back to try again after a full day has passed since the last quota reset.",
+            phone_number=str(user_name)
+        )
+
+    def reset_quota(self, user_name : str):
+        """
+            resets the quota
+        """
+        user, customer = DataRetriver().get_user_by_user_name(user_name=user_name, create_new_if_not_exists=False)
+        if not user:
+            print("No user found", user_name)
+            return {}
+        reset_quota_obj, force_reset = DataRetriver().get_quota_reset_by_user(user_obj=user, create_if_not_exists=True)
+        if not reset_quota_obj:
+            return {}
+        if force_reset:
+            return self.reset_now(customer_obj=customer, reset_quota_obj=reset_quota_obj)
+        last_reseted_at = reset_quota_obj.last_reseted_at
+        now_time = timezone.now()
+
+        # Calculate the time difference between now_time and last_reseted_at
+        time_difference = now_time - last_reseted_at
+        # Check if the time difference is 24 hours or more
+        if time_difference > timedelta(hours=24):
+            self.reset_now(customer_obj=customer, reset_quota_obj=reset_quota_obj)
+            return OutgoingMessage().send_message_with_text(
+                message_text="Congratulations, your reset has been successfully completed! Feel free to continue using Makechat AI. 🎉🤖",
+                phone_number=str(user_name)
+            )
+        return self.reset_limit_exceeded(user_name=user_name)
 
     def reply_image_message(self, data):
         """
@@ -734,6 +799,14 @@ class IncommingMessage(APIView):
         user_name = path_or("", ["WaId"], data)
         user_name = user_name[2:12] if len(user_name) > 10 else user_name
         content = path_or("", ["Body"], data)
+        try:
+            message = content.lower()
+            if message == "reset24":
+                self.reset_quota(user_name=user_name)
+                return Response({"status": status.HTTP_200_OK})
+        except Exception as err:
+            print("Error on reset, ", err)
+            return Response({"status": status.HTTP_200_OK})
         if not user_name or not content:
             print("==NO MESSAGE FOUND")
             return Response({"status": status.HTTP_200_OK})
