@@ -42,7 +42,7 @@ class ChatGpt:
         try:
             open_api_client = self._get_client()
             response = open_api_client.ChatCompletion.create(
-                model="gpt-3.5-turbo", messages=messages
+                model="gpt-4", messages=messages
             )
             message = path_or("", ["choices", 0, "message", "content"], response)
             FreeAiRequests().get_instance().save()
@@ -63,7 +63,7 @@ class ChatGpt:
                 }
             ]
             response = self._get_client().ChatCompletion.create(
-                model="gpt-3.5-turbo", messages=chat
+                model="gpt-4", messages=chat
             )
             message = path_or("", ["choices", 0, "message", "content"], response)
             FreeAiRequests().get_instance().save()
