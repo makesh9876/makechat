@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure--fpyuz#8h!ub8m_%wnoe*r8rx$2ncpb@k1fr^+_yz^+qgh($%g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['makechat.pythonanywhere.com']
+ALLOWED_HOSTS = ['makechat.pythonanywhere.com', "*"]
 
 
 # Application definition
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'chatgpt',
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -50,8 +51,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
-
+CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = 'makechat.urls'
 
 TEMPLATES = [

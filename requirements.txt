@@ -5,3 +5,4 @@ twilio
 openai
 razorpay
 psycopg2-binary
+django-cors-headers

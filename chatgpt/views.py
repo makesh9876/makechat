@@ -27,6 +27,7 @@ from .lib.chatgpt import ChatGpt
 from .lib.payments import PaymentLinks
 from .lib.twillio import OutgoingMessage
 from django.contrib.auth.mixins import LoginRequiredMixin
+from rest_framework.decorators import api_view
 
 TEXT_CHAT_LIMIT_FOR_FREE = 20
 IMAGE_CHAT_LIMIT_FOR_FREE = 2
@@ -1118,3 +1119,22 @@ def profile_page(request):
     )
     context = {"customer": customer}
     return render(request, "chatgpt/profile.html", context)
+
+
+
+@api_view(['POST'])
+def upload_image(request):
+    try:
+        base64_image = request.data.get("base64_image")
+        if not base64_image:
+            return Response({"error": "base64_image is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        res = ChatGpt().get_image_response(base64_image=base64_image)
+        data = res.choices
+        final_res = []
+        for cho in data:
+            final_res.append(cho.message.content)
+        # final_res = ["test test"]
+        return Response({"data": final_res}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": f"Invalid image data: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

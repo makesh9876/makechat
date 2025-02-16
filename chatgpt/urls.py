@@ -7,10 +7,11 @@ from .views import (
     login_request, home,Onboard,chat, chatting,landing_page,
     plan_upgrade, plan_details, checkout,submit_quiz_view,ShowResult,
     terms_and_conditions, privacy_policy, get_started, ImageGenerate, PaymentRedirect,
-    QuoteGenerate, HastagsGenerate,ProdiaImageGenerate, Education, profile_page, QuizHome, quiz_start
+    QuoteGenerate, HastagsGenerate,ProdiaImageGenerate, Education, profile_page, QuizHome, quiz_start, upload_image
 )
 
 urlpatterns = [
+    path('upload_image/', upload_image, name='upload_image'),
     path('get_started/', Education.as_view(), name='get_started'),
     path('home/', home, name='home'),
     path('profile/', profile_page, name='profile_page'),

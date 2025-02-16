@@ -2,7 +2,6 @@
     handle the chatgpt
 """
 from ramda import path_or
-from openai.error import RateLimitError
 from .clients import OpenApiClient
 from ..models import FreeAiRequests
 
@@ -47,7 +46,7 @@ class ChatGpt:
             message = path_or("", ["choices", 0, "message", "content"], response)
             FreeAiRequests().get_instance().save()
             return message
-        except (RateLimitError, Exception) as error:
+        except (Exception) as error:
             print("Error", error)
             return "There is a issue at our system, please contact admin to resolve this issue."
 
@@ -81,3 +80,35 @@ class ChatGpt:
             messages.append({"role": user_msg.role, "content": user_msg.content})
         messages.reverse()
         return messages
+    
+    def get_image_response(self, base64_image):
+        response = self._get_client().chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": """Analyze and describe the contents of this image in detail. Identify objects, people, places, or actions.
+
+    - If the image contains food, provide its estimated nutritional values (calories, fat, protein, carbohydrates, etc.).
+    - If it is a natural scene, describe the environment and any notable elements like weather, animals, or plants.
+    - If it contains text, extract and summarize its meaning.
+    - If it is traffic-related, describe the scene, vehicles, road signs, and possible traffic conditions.
+    - If it contains a person, describe their appearance, expression, and possible emotions (without making personal judgments).
+    - If it is a piece of code, summarize what it does and mention the programming language.
+    - If it is an object or an unknown scene, describe it as clearly as possible.
+
+    Do not ask for any clarifications—provide the best possible description based on the image alone.""",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}", "detail" : "low"},
+                        },
+                    ],
+                }
+            ],
+        )
+        print("======Response", response)
+        return response
